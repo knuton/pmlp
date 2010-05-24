@@ -34,8 +34,8 @@ if not trigrams:
 			# EOM
 			noteNGram = ngram.NoteNGram(sNT)
 			trigrams.append((noteNGram.sequence[0:n-1], noteNGram.sequence[n-1]))
-
-	statistics.persistence.dump('melody', 'bach', trigrams)
+	# Skip for now
+	# statistics.persistence.dump('melody', 'bach', trigrams)
 
 freakyDistri = nltk.probability.ConditionalFreqDist(trigrams)
 
