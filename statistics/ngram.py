@@ -52,7 +52,14 @@ class NoteNGram(NGram):
 	>>> noteTrigram = NoteNGram(melodyFragment)
 	>>> [noteItem.nameWithOctave for noteItem in noteTrigram.sequence]
 	['C4', 'E-5', 'B1']
-	"""
+	>>> melodyFragment = stream.Stream()
+	>>> melodyFragment.append([note.Rest('half'), f, csharp])
+	>>> trigramWithRest = NoteNGram(melodyFragment)
+	>>> [noteItem.__class__ for noteItem in trigramWithRest.sequence]
+	[<class 'music21.note.Rest'>, <class 'music21.note.Note'>, <class 'music21.note.Note'>]
+	>>> [noteItem.nameWithOctave for noteItem in trigramWithRest.sequence if noteItem.isNote]
+	['C4', 'G#0']
+"""
 
 	def __init__(self, noteSequence):
 		""" Create a note n-gram.
@@ -74,7 +81,7 @@ class NoteNGram(NGram):
 		
 		# We need to use an actual note with pitch to determine the distance to C4,
 		# not a rest or other note-like object.
-		firstNote = next((note for note in noteSequence if isinstance(note, music21.note.Note)), None)
+		firstNote = next((note for note in noteSequence if note.isNote), None)
 		# notesToInterval uses C4 by default
 		if firstNote:
 			distanceToC = music21.interval.notesToInterval(firstNote)
