@@ -16,15 +16,20 @@ flattenedSopranos = [score.getElementById('Soprano').flat for score in bachCorpu
 
 trigrams = []
 
-for soprano in flattenedSopranos[0:1]: #remove
-	if len(soprano.notes) < 3:
-		continue
-	prevprev = soprano.notes[-2]
-	prev = soprano.notes[-1]	
-	for note in soprano.notes:
-		print note
-		trigrams.append(ngram.NoteNGram(music21.stream.Stream([prevprev, prev, note])))
-		prevprev = prev
-		prev = note
+n = 3
 
-print trigrams
+for soprano in flattenedSopranos: #remove
+	sopranoNotes = soprano.notes
+	if len(sopranoNotes) < n:
+		continue
+	for i in range(0, len(sopranoNotes) - n):
+		# THIS IS NECESSARY MAGIC!
+		sNT = sopranoNotes[i:i+n]
+		[note for note in sNT]
+		# EOM
+		noteNGram = ngram.NoteNGram(sNT)
+		trigrams.append((noteNGram.sequence[0:n-1], noteNGram.sequence[n-1]))
+
+freakDistri = nltk.probability.ConditionalFreqDist(trigrams)
+
+print freakDistri
