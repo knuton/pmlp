@@ -72,10 +72,14 @@ class NoteNGram(NGram):
 		if not isinstance(noteSequence, music21.stream.Stream):
 			raise ValueError("argument has to be a note21.stream.Stream object")
 		
+		# We need to use an actual note with pitch to determine the distance to C4,
+		# not a rest or other note-like object.
+		firstNote = next((note for note in noteSequence if isinstance(note, music21.note.Note)), None)
 		# notesToInterval uses C4 by default
-		distanceToC = music21.interval.notesToInterval(noteSequence.notes[0])
+		if firstNote:
+			distanceToC = music21.interval.notesToInterval(firstNote)
 		
-		NGram.__init__(self, noteSequence.transpose(distanceToC))
+		NGram.__init__(self, noteSequence.transpose(distanceToC) if firstNote else noteSequence)
 
 
 if __name__ == "__main__":
