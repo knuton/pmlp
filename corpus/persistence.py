@@ -38,6 +38,7 @@ def dump(dataType, corpusName, data):
 	OK, got it. Durations seems to be saved as weakrefs, too.
 	Let us fix this by implementing obj.__reduce__(). Later.
 	<http://docs.python.org/library/pickle.html#pickling-and-unpickling-extension-types>
+	God save the Queen, pickling is already supported in music21: <http://code.google.com/p/music21/source/browse/trunk/music21/converter.py>
 	"""
 	try:
 		with open(_pathForDump(corpusName, dataType), 'w') as f:
