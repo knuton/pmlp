@@ -2,11 +2,35 @@ import os
 import pickle
 
 def dump(dataType, corpusName, data):
-	""" Dumps a melody analysis of a certain corpus to `dumps/<corpusName>_<dataType>.p`.
+	""" Dumps an analysis of a certain corpus to `dumps/<corpusName>_<dataType>.p`.
 	
 	>>> data = "test"
 	>>> dump('melody', 'nonsense', data)
 	True
+	
+	Test to see which music21 objects cause trouble.
+	>>> from music21 import note
+	>>> noteData = note.Note('A4')
+	>>> dump('melody', 'weakref', noteData)
+	True
+	>>> restData = note.Rest('half')
+	>>> dump('melody', 'weakref', restData)
+	True
+	
+	This (Note and Rest) seems to have worked. Next.
+	>>> from music21 import stream
+	>>> measureData = stream.Measure()
+	
+	It works for empty streams.
+	>>> dump('melody', 'weakref', measureData)
+	True
+	
+	But not for streams with children.
+	>>> measureData.append(noteData)
+	>>> dump('melody', 'weakref', measureData)
+	True
+	
+	Boom. But we don't use streams in the Note ngrams. So what's the dealio?
 	"""
 	try:
 		with open(_pathForDump(corpusName, dataType), 'w') as f:
@@ -21,7 +45,7 @@ def dump(dataType, corpusName, data):
 		return False
 
 def load(dataType, corpusName):
-	""" Loads a melody analysis for corpus.
+	""" Loads an analysis for corpus and data type.
 	
 	>>> dump('melody', 'nonsense', 'test')
 	True
