@@ -1,24 +1,24 @@
 import nltk.probability
 
-import music21.corpus
 import music21.stream
 
+import corpus
 import corpus.persistence
 from statistics import ngram
 
 # Look for dump of trigrams to save time
-trigrams = corpus.persistence.load('melody', 'bach')
+trigrams = corpus.persistence.load('melody', 'beatles')
 
 # Compute if no dump was found
 if not trigrams:
 	# Load XML
-	bachXMLCorpus = music21.corpus.getComposer('bach', 'xml')[0:49]
-
+	xmlCorpus = corpus.getCollection('beatles')
+	
 	# Parse XML
-	bachCorpus = [music21.corpus.parseWork(xmlScore) for xmlScore in bachXMLCorpus]
-
+	beatlesCorpus = [corpus.parseWork(xmlScore) for xmlScore in xmlCorpus]
+	
 	# Get flattened Soprano parts (ignore scores without Soprano)
-	flattenedSopranos = [score.getElementById('Soprano').flat for score in bachCorpus if score.getElementById('Soprano')]
+	flattenedSopranos = [score.flat for score in beatlesCorpus]
 
 	trigrams = []
 	n = 3

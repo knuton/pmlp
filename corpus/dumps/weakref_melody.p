@@ -1,0 +1,14 @@
+ccopy_reg
+_reconstructor
+p0
+(cmusic21.note
+Note
+p1
+c__builtin__
+object
+p2
+Ntp3
+Rp4
+(dp5
+S'_currentParent'
+p6
