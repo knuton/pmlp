@@ -33,6 +33,18 @@ class NGram:
 		return self._sequence
 	
 	sequence = property(_getSequence)
+	
+	def _getConditionTuple(self):
+		""" Return a pair with first projection sequence[0:n-1], second projection sequence[n-1].
+		
+		So the first projection is a tuple of n-1 elements, the second is a single element.
+		
+		>>> NGram(['a', 'b', 'c'])._getConditionTuple()
+		(('a', 'b'), 'c')
+		"""
+		return (self.sequence[0:self.n-1], self.sequence[self.n-1])
+	
+	conditionTuple = property(_getConditionTuple)
 
 class NoteNGram(NGram):
 	""" An n-gram for normalized (startnote is C4) melody fragments, incorporating pitch and duration of n notes.
