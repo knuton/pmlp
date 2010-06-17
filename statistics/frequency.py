@@ -77,6 +77,45 @@ class FrequencyDistribution:
 		"""
 		return self._frequencies[sample]
 
+class ConditionalFrequencyDistribution:
+	""" Conditional frequency distribution for any objects. """
+	
+	def __init__(self, conditionSamplePairs = []):
+		""" Create new conditional frequency distribution from sequence of
+		sequence type objects, where the first item is the condition and the
+		latter items are its samples.
+		
+		>>> newCFD = ConditionalFrequencyDistribution()
+		"""
+		self._conditions = collections.defaultdict(FrequencyDistribution)
+		
+		[self.seenOnCondition(pair[0], pair[1]) for pair in conditionSamplePairs if self._checkConditionSamplePair(pair)]
+	
+	def _checkConditionSamplePair(self, pair):
+		""" Checks wether pair is indeed a pair and throws an exception if it isn't.
+		
+		>>> newCFD = ConditionalFrequencyDistribution()
+		>>> newCFD._checkConditionSamplePair([])
+		Traceback (most recent call last):
+		ValueError: Condition-sample sequences need to have one condition and one sample (sequence).
+		"""
+		if len(pair) == 2:
+			return True
+		raise ValueError('Condition-sample sequences need to have one condition and one sample (sequence).')
+	
+	def seenOnCondition(self, condition, sample):
+		""" Sees a sample for a certain condition, that is, for that condition's frequency distribution. 
+		
+		"""
+		self[condition].seen(sample)
+	
+	def __getitem__(self, condition):
+		""" Returns the frequency distribution for the provided condition. 
+		
+		
+		"""
+		return self._conditions[condition]
+
 if __name__ == '__main__':
 	import doctest
 	doctest.testmod()
