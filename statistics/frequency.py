@@ -47,16 +47,41 @@ class FrequencyDistribution:
 		0.5
 		"""
 		return float(self[sample])/self.total
-		
-	def __len__(self):
-		""" Return number of seen sample types. 
+	
+	def samples(self, sortFn = None):
+		""" Returns a list of all samples.
 		
 		>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c'])
-		>>> len(newFreak)
-		3
+		>>> newFreak.samples()
+		['a', 'c', 'b']
+		>>> newFreak.samples(lambda x,y: cmp(x,y))
+		['a', 'b', 'c']
 		"""
-		return len(self._frequencies)
-		
+		samples = self._frequencies.keys()
+		if sortFn:
+			samples.sort(sortFn)
+		return samples
+	
+	def table(self):
+		""" Prints a table of the frequency distribution. """
+		return '\n'.join([str(sample) + ' ' + str(self[sample]) for sample in self.samples()])
+	
+	def _getTop(self):
+		""" Returns the top occuring sample. """
+		if len(self._frequencies) == 0:
+			return None
+		return self.samples(lambda x,y: cmp(self._frequencies[y], self._frequencies[x]))[0]
+	
+	top = property(_getTop,
+	doc = """ Returns the top occuring sample.
+	
+	>>> newFreak = FrequencyDistribution()
+	>>> newFreak.top
+	>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c'])
+	>>> newFreak.top
+	'b'
+	""")
+	
 	def _getTotal(self):
 		""" Returns the number of total sample tokens. """
 		return self._total_tokens
@@ -68,7 +93,7 @@ class FrequencyDistribution:
 	>>> newFreak.total
 	4
 	""")
-		
+	
 	def __getitem__(self, sample):
 		""" Returns the number of counted samples equal to the provided sample.
 		
@@ -76,6 +101,19 @@ class FrequencyDistribution:
 		0
 		"""
 		return self._frequencies[sample]
+	
+	def __len__(self):
+		""" Return number of seen sample types. 
+		
+		>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c'])
+		>>> len(newFreak)
+		3
+		"""
+		return len(self._frequencies)
+	
+	def __iter__(self):
+		""" Returns an iterator over the samples. """
+		self.samples.__iter__()
 
 class ConditionalFrequencyDistribution:
 	""" Conditional frequency distribution for any objects. """
@@ -103,16 +141,45 @@ class ConditionalFrequencyDistribution:
 			return True
 		raise ValueError('Condition-sample sequences need to have one condition and one sample (sequence).')
 	
+	def expected(self, condition):
+		""" Returns the most probable next value. 
+		
+		>>> newCFD = ConditionalFrequencyDistribution([('a', 'b'), ('a', 'b'), ('a', 'c')])
+		>>> newCFD.expected('a')
+		'b'
+		"""
+		return self[condition].top
+	
 	def seenOnCondition(self, condition, sample):
 		""" Sees a sample for a certain condition, that is, for that condition's frequency distribution. 
 		
+		>>> newCFD = ConditionalFrequencyDistribution()
+		>>> newCFD.seenOnCondition('a', 'b')
+		>>> newCFD.conditions
+		['a']
+		>>> newCFD['a'].total
+		1
 		"""
 		self[condition].seen(sample)
+	
+	def _getConditions(self):
+		""" Returns the number of total sample tokens. """
+		return self._conditions.keys()
+    
+	conditions = property(_getConditions,
+	doc = """ Returns a list of all conditions.
+    
+	>>> newCFD = ConditionalFrequencyDistribution([('a', 'b'), ('b', 'c')])
+	>>> newCFD.conditions
+	['a', 'b']
+	""")
 	
 	def __getitem__(self, condition):
 		""" Returns the frequency distribution for the provided condition. 
 		
-		
+		>>> newCFD = ConditionalFrequencyDistribution([('a', 'b'), ('b', 'c')])
+		>>> newCFD['b'].samples()
+		['c']
 		"""
 		return self._conditions[condition]
 
