@@ -32,11 +32,13 @@ if not trigrams:
 			sNT = sopranoNotes[i:i+n]
 			[note for note in sNT]
 			# EOM
-			noteNGram = ngram.NoteNGram(sNT)
-			trigrams.append((noteNGram.sequence[0:n-1], noteNGram.sequence[n-1]))
+			trigrams.append(ngram.NoteNGram(sNT))
 	# Skip for now
 	# corpus.persistence.dump('melody', 'bach', trigrams)
 
-freakyDistri = nltk.probability.ConditionalFreqDist(trigrams)
+freakyDistri = nltk.probability.ConditionalFreqDist([noteNGram.conditionTuple for noteNGram in trigrams])
 
 print freakyDistri
+print freakyDistri.N()
+for i in range(0, 10):
+	print freakyDistri[i].samples(), freakyDistri[i].max()
