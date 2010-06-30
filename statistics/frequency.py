@@ -174,6 +174,30 @@ class ConditionalFrequencyDistribution:
 	['a', 'b']
 	""")
 	
+	def _getTotal(self):
+		""" Returns the number of total sample tokens. """
+		return reduce(lambda x,y: x + y.total, self._conditions.values(), 0)
+	
+	total = property(_getTotal,
+	doc = """ Returns the number of total sample tokens.
+	
+	>>> emptyCFD = ConditionalFrequencyDistribution()
+	>>> emptyCFD.total
+	0
+	>>> newCFD = ConditionalFrequencyDistribution([['a', 'b'], ['b', 'c']])
+	>>> newCFD.total
+	2
+	""")
+	
+	def __len__(self):
+		""" Return number of seen conditions. 
+		
+		>>> newCFD = ConditionalFrequencyDistribution([['a', 'b'], ['b', 'c']])
+		>>> len(newCFD)
+		2
+		"""
+		return len(self._conditions)
+	
 	def __getitem__(self, condition):
 		""" Returns the frequency distribution for the provided condition. 
 		
