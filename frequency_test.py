@@ -1,4 +1,5 @@
 import nltk.probability
+from nltk.probability import *
 
 import music21.corpus
 import music21.stream
@@ -39,4 +40,9 @@ if not trigrams:
 
 freakyDistri = nltk.probability.ConditionalFreqDist(trigrams)
 
+#MLE:
+ngram_model = ConditionalProbDist(freakyDistri, MLEProbDist)
+
+
 print freakyDistri
+print ngram_model
