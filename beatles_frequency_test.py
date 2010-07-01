@@ -1,5 +1,3 @@
-import nltk.probability
-
 import music21.stream
 
 import corpus
@@ -33,7 +31,6 @@ if not trigrams:
 			[note for note in sNT]
 			# EOM
 			trigrams.append(ngram.NoteNGram(sNT))
-	# Skip for now
 	corpus.persistence.dump('melody', 'beatles', trigrams)
 
 freakyDistri = nltk.probability.ConditionalFreqDist([noteNGram.conditionTuple for noteNGram in trigrams])
