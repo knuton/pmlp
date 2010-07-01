@@ -1,3 +1,8 @@
+import music21.note
+import music21.duration
+import music21.interval
+import music21.stream
+
 class NGram:
 	""" An n-gram is a sequence of n items, taken from a larger sequence.
 
@@ -83,11 +88,6 @@ class NoteNGram(NGram):
 			...
 		ValueError: argument has to be a note21.stream.Stream object
 		"""
-
-		import music21.note
-		import music21.interval
-		import music21.stream
-
 		if not isinstance(noteSequence, music21.stream.Stream):
 			raise ValueError("argument has to be a note21.stream.Stream object")
 		
@@ -97,8 +97,16 @@ class NoteNGram(NGram):
 		# notesToInterval uses C4 by default
 		if firstNote:
 			distanceToC = music21.interval.notesToInterval(firstNote)
+			noteSequence = noteSequence.transpose(distanceToC)
 		
-		NGram.__init__(self, noteSequence.transpose(distanceToC) if firstNote else noteSequence)
+		NGram.__init__(self, [self.makeNote(item) for item in noteSequence])
+	
+	def makeNote(self, noteObj):
+		if noteObj.isNote:
+			return music21.note.Note(str(noteObj.pitch), type = noteObj.duration.quarterLength)
+		elif noteObj.isRest:
+			rest = music21.note.Rest()
+			rest.duration = music21.duration.Duration(noteObj.duration.quarterLength)
 
 
 if __name__ == "__main__":
