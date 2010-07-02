@@ -3,7 +3,7 @@
 # Name:		PMLP_alpha.py
 # Purpose: 	generate a simple song
 #
-# Version: 	30.06.2010
+# Version: 	02.07.2010
 #
 #-----------------------------------------------------------------# 
 
@@ -20,7 +20,6 @@ from statistics import ngram
 from statistics import frequency
 
 import sys, random, warnings
-
 
 # Look for dump of trigrams to save time
 trigrams = corpus.persistence.load('melody', 'bach')
@@ -54,124 +53,90 @@ if not trigrams:
 	# Skip for now
 	# corpus.persistence.dump('melody', 'bach', trigrams)
 
-"""
-training_pairs = [(corpus[i-m1:i], corpus[i]) 
-	for i in range(m1, size)]
-	
-	print training_pairs
-	
-	freq_data = ConditionalFreqDist(training_pairs)
-"""
 
-#freakyDistri = frequency.FrequencyDistribution
-freakyDistri = nltk.probability.ConditionalFreqDist(trigrams)
-
-#freakyDistri = frequency.FrequencyDistribution(trigrams)
-
-
-
-
-
-#Use MLE (no smoothing) to generate Probability Distribution:
-ngramModel = ConditionalProbDist(freakyDistri, MLEProbDist)
-
-
-# alphabet festlegen: 
-# (aus statistics frequency.py)
-
+# ngramDistri is our frequency distribution of ngrams
 ngramDistri = frequency.FrequencyDistribution(trigrams)
 
+# determine the alphabet
 alphabet = ngramDistri.samples()
 
-ngramDistri.relativeFrequency(alphabet[20])
-
-
-
-# _generate generiert zufaellige note aus alphabet
-def _generate (self):
-	p = random.random()
-	for c in alphabet:
-		p -= self.prob(c) # p = p - probability of c given history
-		if p <= 0:
-			return c
-	#warnings.warn("Failed to find random choice with remaining p=%g" % (p))
-	return random.choice(alphabet)
-
-ProbDistI.generate = _generate # this overrides the generate() method of ProbDistI objects
-
-
-
+# generate a new note (if possible based on its probability given a certain history)
 def generator(history):
+	# generate a random number between 0 and 1
 	p = random.random()
+	
+	# look for a high probability for a trigram given the history and if found return the last note of that trigram
 	for c in alphabet: 
-		#p -= ngramDistri.relativeFrequency(c)
-		
 		# c is a tuple of this form: ((x,y),z)
 		# c[1] = z
-		
 		ngram = history, c[1] 
-		p -= ngramDistri.relativeFrequency(ngram) # probability of c given history
+		p -= ngramDistri.relativeFrequency(ngram) # p - probability of c given history
 		if p <= 0:
 			return c[1]
-		
-		alternative = random.choice(alphabet)
-		return alternative[1]
+	
+	# if nothing is found take a random note
+	warnings.warn("Failed to find random choice with remaining p = %g" % (p))
+	alternative = random.choice(alphabet)
+	return alternative[1]
 
 
-
- 
 # randomSong creates a new song (or rather a new Part)
 def randomSong(ngramModel, startsequence, songlength, filename):
-	
 	# n is the order of the ngram (e.g. 3)
 	#history = startsequence[len(startsequence)-n:len(startsequence)] 
-	
 	history = startsequence
+	print "First History"
+	print history
 	
 	# create list to fill with new notes
 	generated = list()
  	
+ 	# fill the list with new notes
  	for elem in range(songlength): 
-		
-		
-		# probability distribution Pr(X | history) with class ProbDistI
-		
-		#probGivenHistory = ngramModel[history]  
-		
-		#probGivenHistory = ngramModel.relativeFrequency(history) 
-		#probGivenHistory = (history, ngramModel.relativeFrequency(history))
 	
 		# selects random note c with Pr(c|history)
-		
 		nextNote = generator(history)
-		#nextNote = probGivenHistory.generate() 
 		
+		# add new note to list of generated notes
 		generated.append(nextNote)
-		print "Old History"
-		print history
 		
 		# update history
-		history = history[1:n], nextNote
+		# This is only creates a trigram history -> has to be changed if other ngrams are used
+		#history = (history[1], nextNote)
 		
+		history = history[1:n-1] + (nextNote,)
 		print "New History"
 		print history
 		
 	# add startsequence to song
-	generated.reverse()
-	generated.append(startsequence)
-	generated.reverse()
+	reversestart = []
+	for elem in startsequence: 
+		reversestart.insert(0, elem)
 	
+	for elem in reversestart:
+		generated.insert(0, elem)
+
 	# create new music21 stream using the generated notes
+	# later it would be better to first generate an intro, then some in-between-stuff and finally an outro
+	"""
 	s = music21.stream.Stream()
 	for note in generated:
 		s.append(note)
+	"""
 	
+	# this way we can insert different parts as soon as we got more than one 
+	a = music21.stream.Part()
+	for note in generated:
+		a.append(note)
+		
+	s = music21.stream.Score()
+	s.insert(0, a)
+		
 	# show new song
 	#s.show('musicxml')
 	
 	# store new song in musicXML file
 	s.write('musicxml', 'output/'+ str(filename) + '.xml')
-	
 	
 	# Probleme bisher: 
 	# - Kommt mit grossen Liedlaengen nicht klar
@@ -179,9 +144,8 @@ def randomSong(ngramModel, startsequence, songlength, filename):
 	# - koennte noch Fehler bei der generate methode geben 
 	# - Andere Dinge wie startkey, tempo, instrumente/spuren etc koennte/sollte man auch noch einfuegen
 	
-
-# start sollte noch etwas professioneller z.B. durch Analyse der Liedanfaenge generiert werden
-
+# so far start only consists of 2 arbitrary notes
+# could be something more sophisticated like a real intro 
 starttrigram = alphabet[3]
 start = starttrigram[0]
 print start
@@ -190,7 +154,6 @@ print start
 songname = raw_input("Enter a name for the new song: ")
 
 # create a new song 
-#randomSong(ngramModel, start, 40, songname)
-randomSong(ngramDistri, start, 100, songname)
+randomSong(ngramDistri, start, 40, songname)
 
 	
