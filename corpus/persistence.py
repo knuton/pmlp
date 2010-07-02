@@ -78,6 +78,9 @@ def load(dataType, corpusName):
 
 def _pathForDump(corpusName, dataType):
 	""" Creates a path for corpus name and data type in the dumps folder. """
+	dumpsPath = os.path.join(os.path.dirname(__file__), 'dumps')
+	if not os.path.isdir(dumpsPath):
+		os.mkdir(dumpsPath)
 	return os.path.join(os.path.dirname(__file__), 'dumps', '%s_%s.p' % (corpusName, dataType))
 	
 
