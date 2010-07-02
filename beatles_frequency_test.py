@@ -3,6 +3,7 @@ import music21.stream
 import corpus
 import corpus.persistence
 from statistics import ngram
+from statistics import frequency
 
 # Look for dump of trigrams to save time
 trigrams = corpus.persistence.load('melody', 'beatles')
@@ -33,9 +34,9 @@ if not trigrams:
 			trigrams.append(ngram.NoteNGram(sNT))
 	corpus.persistence.dump('melody', 'beatles', trigrams)
 
-freakyDistri = nltk.probability.ConditionalFreqDist([noteNGram.conditionTuple for noteNGram in trigrams])
+freakyDistri = frequency.ConditionalFrequencyDistribution([noteNGram.conditionTuple for noteNGram in trigrams])
 
 print freakyDistri
-print freakyDistri.N()
-for i in range(0, 10):
-	print freakyDistri[i].samples(), freakyDistri[i].max()
+print freakyDistri.total
+for key in freakyDistri.conditions[0:10]:
+	print freakyDistri[key].samples(), freakyDistri[key].top
