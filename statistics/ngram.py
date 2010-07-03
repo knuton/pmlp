@@ -1,7 +1,13 @@
+# --- Add parent dir to paths for doctest compatiable intra-package imports
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# --- End of parent loading
 import music21.note
 import music21.duration
 import music21.interval
 import music21.stream
+import tools.music42
 
 class NGram:
 	""" An n-gram is a sequence of n items, taken from a larger sequence.
@@ -91,27 +97,9 @@ class NoteNGram(NGram):
 		if not isinstance(noteSequence, music21.stream.Stream):
 			raise ValueError("argument has to be a note21.stream.Stream object")
 		
-		# We need to use an actual note with pitch to determine the distance to C4,
-		# not a rest or other note-like object.
-		firstNote = next((note for note in noteSequence if note.isNote), None)
-		# notesToInterval uses C4 by default
-		if firstNote:
-			distanceToC = music21.interval.notesToInterval(firstNote)
-			noteSequence = noteSequence.transpose(distanceToC)
+		noteSequence = tools.music42.normalizeNotes(noteSequence)
 		
-		NGram.__init__(self, [self.makeNote(item) for item in noteSequence])
-	
-	def makeNote(self, noteObj):
-		if noteObj.isNote:
-			return music21.note.Note(str(noteObj.pitch), type = noteObj.duration.quarterLength)
-		elif noteObj.isRest:
-			rest = music21.note.Rest()
-			rest.duration = music21.duration.Duration(noteObj.duration.quarterLength)
-			return rest
-		elif noteObj.isChord:
-			return music21.chord.Chord(noteObj.pitchClasses, type = noteObj.duration.quarterLength)
-		else:
-			return music21.note.Note()
+		NGram.__init__(self, noteSequence)
 
 
 if __name__ == "__main__":
