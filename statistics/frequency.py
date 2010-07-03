@@ -98,7 +98,7 @@ class FrequencyDistribution:
 		weights = [1.0, 0.8, 0.6, 0.4, 0.2]
 		fuzztop = None
 		fuzzfreq = -1
-		for i in range(0, len(self._sampleHeap[:5]) - 1):
+		for i in range(0, len(self._sampleHeap[:5])):
 			sample = self._sampleHeap[i]
 			weightfreq = self.relativeFrequency(sample) * random.uniform(0.0, weights[i])
 			if weightfreq > fuzzfreq:
@@ -114,6 +114,9 @@ class FrequencyDistribution:
 	>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c', 'd', 'e', 'f'])
 	>>> newFreak.fuzztop in ['a', 'b', 'c', 'd', 'e']
 	True
+	>>> newFreak = FrequencyDistribution(['a', 'a', 'a'])
+	>>> newFreak.fuzztop
+	'a'
 	""")
 	
 	def _getTotal(self):
@@ -251,6 +254,26 @@ class ConditionalFrequencyDistribution:
 	>>> newCFD = ConditionalFrequencyDistribution([['a', 'b'], ['b', 'c']])
 	>>> newCFD.total
 	2
+	""")
+	
+	def _getSampleSpace(self):
+		""" Returns the combined samples of all conditions. """
+		space = set()
+		for fd in self._conditions.values():
+			space |= set(fd.samples())
+		if None in space:
+			logger.error('None crept into the samples.')
+			space.remove(None)
+		return list(space)
+	
+	sampleSpace = property(_getSampleSpace,
+	doc = """ Returns a list of the combined samples of all conditions.
+	
+	There is no reasonable ordering for this I can think of.
+	
+	>>> cfd = ConditionalFrequencyDistribution([(1,2),(2,3),(2,4),(2,4)])
+	>>> set(cfd.sampleSpace) == set([2,3,4])
+	True
 	""")
 	
 	def __len__(self):
