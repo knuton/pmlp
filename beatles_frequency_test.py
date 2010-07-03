@@ -37,6 +37,6 @@ if not trigrams:
 freakyDistri = frequency.ConditionalFrequencyDistribution([noteNGram.conditionTuple for noteNGram in trigrams])
 
 print freakyDistri
-print freakyDistri.total
+print len(freakyDistri)
 for key in freakyDistri.conditions[0:10]:
 	print freakyDistri[key].samples(), freakyDistri[key].top
