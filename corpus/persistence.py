@@ -51,7 +51,7 @@ def dump(dataType, corpusName, data):
 				pickle.dump(data, f)
 				return True
 			except pickle.PicklingError:
-				print "%s can not be pickled." % (data) # TODO logger
+				logger.log("%s can not be pickled." % (data))
 				return False
 	except IOError:
 		logger.log("Couldn't open file for writing.")
@@ -72,10 +72,12 @@ def load(dataType, corpusName):
 			try:
 				return pickle.load(f)
 			except pickle.UnpicklingError:
-				print "%s's %s can not be unpickled." % (corpusName, dataType) # TODO logger
+				logger.log("%s's %s can not be unpickled." % (corpusName, dataType))
 				return None
 			except EOFError:
 				# Previous write of dump failed.
+				logger.log("Removing corrupted dump for %s' %s." % (corpusName, dataType))
+				os.remove(_pathForDump(corpusName, dataType))
 				return None
 	except IOError:
 		logger.log("Couldn't open file for reading.")
