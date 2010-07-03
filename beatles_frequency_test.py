@@ -40,3 +40,5 @@ print freakyDistri
 print len(freakyDistri)
 for key in freakyDistri.conditions[0:10]:
 	print freakyDistri[key].samples(), freakyDistri[key].top
+	for sample in freakyDistri[key].samples():
+		print sample, freakyDistri[key][sample], freakyDistri[key].relativeFrequency(sample)
