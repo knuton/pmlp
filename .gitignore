@@ -2,4 +2,4 @@
 .DS_Store
 io/*
 corpus/dumps/*
-music21/
+logs/
