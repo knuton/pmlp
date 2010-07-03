@@ -101,7 +101,6 @@ class FrequencyDistribution:
 		for i in range(0, len(self._sampleHeap[:5]) - 1):
 			sample = self._sampleHeap[i]
 			weightfreq = self.relativeFrequency(sample) * random.uniform(0.0, weights[i])
-			print i, weightfreq
 			if weightfreq > fuzzfreq:
 				fuzztop = sample
 				fuzzfreq = weightfreq
