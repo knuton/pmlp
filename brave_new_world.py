@@ -62,8 +62,8 @@ def generator(realHistory):
 	
 	normalizedHistory = music42.normalizeNotes(realHistory)
 	
-	if ngramCFD[normalizedHistory].top:
-		return music42.denormalizeNote(ngramCFD[normalizedHistory].fuzztop, realHistory)
+	if ngramCFD.expected(normalizedHistory):
+		return music42.denormalizeNote(ngramCFD.expectedFuzz(normalizedHistory), realHistory)
 	
 	# if nothing is found take a random note
 	logger.log("Failed to find random choice for history %s" % (normalizedHistory,))

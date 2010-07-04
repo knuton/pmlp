@@ -1,4 +1,5 @@
 import collections
+import copy
 import random
 
 class FrequencyDistribution:
@@ -161,6 +162,23 @@ class FrequencyDistribution:
 			break
 		heap[pos] = newitem
 	
+	def __add__(self, other):
+		""" Returns the 'sum' of two frequency distributions.
+		
+		>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c'])
+		>>> secondFreak = FrequencyDistribution(['d', 'e'])
+		>>> sumFreak = newFreak + secondFreak
+		>>> len(newFreak) + len(secondFreak) == len(sumFreak)
+		True
+		>>> set(newFreak) | set(secondFreak) == set(sumFreak)
+		True
+		"""
+		sumFD = copy.deepcopy(self)
+		for sample in other:
+			for i in range(0, other[sample]):
+				sumFD.seen(sample)
+		return sumFD
+	
 	def __getitem__(self, sample):
 		""" Returns the number of counted samples equal to the provided sample.
 		
@@ -168,6 +186,10 @@ class FrequencyDistribution:
 		0
 		"""
 		return self._frequencies[sample]
+	
+	def __iter__(self):
+		""" Returns an iterator over the samples. """
+		return self.samples().__iter__()
 	
 	def __len__(self):
 		""" Return number of seen sample types. 
@@ -177,10 +199,6 @@ class FrequencyDistribution:
 		3
 		"""
 		return len(self._frequencies)
-	
-	def __iter__(self):
-		""" Returns an iterator over the samples. """
-		self.samples.__iter__()
 
 class ConditionalFrequencyDistribution:
 	""" Conditional frequency distribution for any objects. """
@@ -216,6 +234,37 @@ class ConditionalFrequencyDistribution:
 		'b'
 		"""
 		return self[condition].top
+	
+	def expectedFuzz(self, condition):
+		""" Returns one of the most probable next values. """
+		return self[condition].fuzztop
+	
+	def backoff(self, shortCondition):
+		""" Backoff and just look for conditions with a suffix like the one provided.
+		
+		>>> newCFD = ConditionalFrequencyDistribution([('ab', 'd'), ('bb', 'd'), ('cb', 'c'), ('ba', 'f')])
+		>>> newCFD.backoff('b').samples()
+		['d', 'c']
+		"""
+		if len(shortCondition) == 0:
+			return FrequencyDistribution()
+		return reduce(lambda x,y: x+y,
+			[self[condition] for condition in self.conditions if condition[len(condition)-len(shortCondition):] == shortCondition],
+			FrequencyDistribution()
+		)
+	
+	def backoffExpected(self, shortCondition):
+		""" Returns the most probable next value for a condition suffix.
+		
+		>>> newCFD = ConditionalFrequencyDistribution([('ab', 'd'), ('bb', 'd'), ('cb', 'c'), ('ba', 'f')])
+		>>> newCFD.backoffExpected('b')
+		'd'
+		"""
+		return self.backoff(shortCondition).top
+	
+	def backoffExpectedFuzz(self, shortCondition):
+		""" Returns one of the most probable next values for a condition suffix. """
+		return self.backoff(shortCondition).fuzztop
 	
 	def seenOnCondition(self, condition, sample):
 		""" Sees a sample for a certain condition, that is, for that condition's frequency distribution. 
