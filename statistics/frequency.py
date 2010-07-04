@@ -1,4 +1,5 @@
 import collections
+import random
 
 class FrequencyDistribution:
 	""" Frequency distribution for any objects. """
@@ -8,6 +9,7 @@ class FrequencyDistribution:
 		"""
 		# dict for frequencies
 		self._frequencies = collections.defaultdict(int)
+		self._sampleHeap = []
 		# Total number of seen objects
 		self._total_tokens = 0
 		
@@ -35,6 +37,12 @@ class FrequencyDistribution:
 		2
 		"""
 		self._frequencies[sample] += 1
+		# If the frequency is 1, the sample hadn't been seen
+		if self._frequencies[sample] == 1:
+			# Add it to the heap
+			self._heappush(sample)
+		else:
+			self._siftdown(0, self._sampleHeap.index(sample))
 		self._total_tokens += 1
 	
 	def relativeFrequency(self, sample):
@@ -53,12 +61,13 @@ class FrequencyDistribution:
 		
 		>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c'])
 		>>> newFreak.samples()
-		['a', 'c', 'b']
+		['b', 'a', 'c']
 		>>> newFreak.samples(lambda x,y: cmp(x,y))
 		['a', 'b', 'c']
 		"""
-		samples = self._frequencies.keys()
+		samples = self._sampleHeap
 		if sortFn:
+			samples = list(samples)
 			samples.sort(sortFn)
 		return samples
 	
@@ -68,9 +77,9 @@ class FrequencyDistribution:
 	
 	def _getTop(self):
 		""" Returns the top occuring sample. """
-		if len(self._frequencies) == 0:
+		if len(self._sampleHeap) == 0:
 			return None
-		return self.samples(lambda x,y: cmp(self._frequencies[y], self._frequencies[x]))[0]
+		return self._sampleHeap[0]
 	
 	top = property(_getTop,
 	doc = """ Returns the top occuring sample.
@@ -80,6 +89,34 @@ class FrequencyDistribution:
 	>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c'])
 	>>> newFreak.top
 	'b'
+	""")
+	
+	def _getFuzztop(self):
+		""" Returns one of the top 5 occuring samples with weighted probabilites. """
+		if len(self._sampleHeap) == 0:
+			return None
+		weights = [1.0, 0.8, 0.6, 0.4, 0.2]
+		fuzztop = None
+		fuzzfreq = -1
+		for i in range(0, len(self._sampleHeap[:5])):
+			sample = self._sampleHeap[i]
+			weightfreq = self.relativeFrequency(sample) * random.uniform(0.0, weights[i])
+			if weightfreq > fuzzfreq:
+				fuzztop = sample
+				fuzzfreq = weightfreq
+		return fuzztop
+
+	fuzztop = property(_getFuzztop,
+	doc = """ Returns the top occuring sample.
+
+	>>> newFreak = FrequencyDistribution()
+	>>> newFreak.fuzztop
+	>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c', 'd', 'e', 'f'])
+	>>> newFreak.fuzztop in ['a', 'b', 'c', 'd', 'e']
+	True
+	>>> newFreak = FrequencyDistribution(['a', 'a', 'a'])
+	>>> newFreak.fuzztop
+	'a'
 	""")
 	
 	def _getTotal(self):
@@ -93,6 +130,36 @@ class FrequencyDistribution:
 	>>> newFreak.total
 	4
 	""")
+	
+	#--------------------------------------------------------------------------
+	# Heap implementation adapted from Python's heapq module
+	# Adapted to use different comparison criteria
+	# Adapted to be a maxheap
+	
+	def _heappush(self, item):
+		"""Push item onto heap, maintaining the heap invariant.
+		
+		>>> newFreak = FrequencyDistribution(['c', 'c', 'c', 'b', 'b', 'a'])
+		>>> newFreak._sampleHeap
+		['c', 'b', 'a']
+		"""
+		self._sampleHeap.append(item)
+		self._siftdown(0, len(self._sampleHeap)-1)
+	
+	def _siftdown(self, startpos, pos):
+		heap = self._sampleHeap
+		newitem = heap[pos]
+		# Follow the path to the root, moving parents down until finding a
+		# place newitem fits.
+		while pos > startpos:
+			parentpos = (pos - 1) >> 1
+			parent = heap[parentpos]
+			if self[newitem] > self[parent]:
+				heap[pos] = parent
+				pos = parentpos
+				continue
+			break
+		heap[pos] = newitem
 	
 	def __getitem__(self, sample):
 		""" Returns the number of counted samples equal to the provided sample.
@@ -187,6 +254,26 @@ class ConditionalFrequencyDistribution:
 	>>> newCFD = ConditionalFrequencyDistribution([['a', 'b'], ['b', 'c']])
 	>>> newCFD.total
 	2
+	""")
+	
+	def _getSampleSpace(self):
+		""" Returns the combined samples of all conditions. """
+		space = set()
+		for fd in self._conditions.values():
+			space |= set(fd.samples())
+		if None in space:
+			logger.error('None crept into the samples.')
+			space.remove(None)
+		return list(space)
+	
+	sampleSpace = property(_getSampleSpace,
+	doc = """ Returns a list of the combined samples of all conditions.
+	
+	There is no reasonable ordering for this I can think of.
+	
+	>>> cfd = ConditionalFrequencyDistribution([(1,2),(2,3),(2,4),(2,4)])
+	>>> set(cfd.sampleSpace) == set([2,3,4])
+	True
 	""")
 	
 	def __len__(self):

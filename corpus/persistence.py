@@ -1,5 +1,10 @@
+# --- Add parent dir to paths for doctest compatiable intra-package imports
+import sys
 import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# --- End of parent loading
 import pickle
+from tools import logger
 
 def dump(dataType, corpusName, data):
 	""" Dumps an analysis of a certain corpus to `dumps/<corpusName>_<dataType>.p`.
@@ -26,17 +31,17 @@ def dump(dataType, corpusName, data):
 	True
 	
 	But not for streams with children.
-	>>> measureData.append(noteData)
-	>>> dump('melody', 'weakref', measureData)
-	True
+	# >>> measureData.append(noteData)
+	# >>> dump('melody', 'weakref', measureData)
+	# True
 	
 	Boom. But we don't use streams in the Note ngrams. So what's the dealio?
-	>>> noteData.quarterLength = 3
-	>>> dump('melody', 'weakref', noteData)
-	True
+	# >>> noteData.quarterLength = 3
+	# >>> dump('melody', 'weakref', noteData)
+	# True
 	
 	OK, got it. Durations seems to be saved as weakrefs, too.
-	Let us fix this by implementing obj.__reduce__(). Later.
+	Avoided the issue by creating "normalized" note objects.
 	<http://docs.python.org/library/pickle.html#pickling-and-unpickling-extension-types>
 	God save the Queen, pickling is already supported in music21: <http://code.google.com/p/music21/source/browse/trunk/music21/converter.py>
 	"""
@@ -46,10 +51,10 @@ def dump(dataType, corpusName, data):
 				pickle.dump(data, f)
 				return True
 			except pickle.PicklingError:
-				print "%s can not be pickled." % (data) # TODO logger
+				logger.log("%s can not be pickled." % (data))
 				return False
 	except IOError:
-		# TODO logger.log("Couldn't open file for writing.")
+		logger.log("Couldn't open file for writing.")
 		return False
 
 def load(dataType, corpusName):
@@ -67,17 +72,22 @@ def load(dataType, corpusName):
 			try:
 				return pickle.load(f)
 			except pickle.UnpicklingError:
-				print "%s's %s can not be unpickled." % (corpusName, dataType) # TODO logger
+				logger.log("%s's %s can not be unpickled." % (corpusName, dataType))
 				return None
 			except EOFError:
 				# Previous write of dump failed.
+				logger.log("Removing corrupted dump for %s' %s." % (corpusName, dataType))
+				os.remove(_pathForDump(corpusName, dataType))
 				return None
 	except IOError:
-		# TODO logger.log("Couldn't open file for reading.")
+		logger.log("Couldn't open file for reading.")
 		return None
 
 def _pathForDump(corpusName, dataType):
 	""" Creates a path for corpus name and data type in the dumps folder. """
+	dumpsPath = os.path.join(os.path.dirname(__file__), 'dumps')
+	if not os.path.isdir(dumpsPath):
+		os.mkdir(dumpsPath)
 	return os.path.join(os.path.dirname(__file__), 'dumps', '%s_%s.p' % (corpusName, dataType))
 	
 
