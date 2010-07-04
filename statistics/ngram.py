@@ -107,6 +107,11 @@ class NoteNGram(NGram):
 		elif noteObj.isRest:
 			rest = music21.note.Rest()
 			rest.duration = music21.duration.Duration(noteObj.duration.quarterLength)
+			return rest
+		elif noteObj.isChord:
+			return music21.chord.Chord(noteObj.pitchClasses, type = noteObj.duration.quarterLength)
+		else:
+			return music21.note.Note()
 
 
 if __name__ == "__main__":
