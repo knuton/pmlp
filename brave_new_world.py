@@ -58,13 +58,15 @@ ngramCFD = frequency.ConditionalFrequencyDistribution([noteNGram.conditionTuple 
 alphabet = ngramCFD.sampleSpace
 
 # generate a new note (if possible based on its probability given a certain history)
-def generator(history):
+def generator(realHistory):
 	
-	if ngramCFD[history].top:
-		return ngramCFD[history].fuzztop
+	normalizedHistory = music42.normalizeNotes(realHistory)
+	
+	if ngramCFD[normalizedHistory].top:
+		return music42.denormalizeNote(ngramCFD[normalizedHistory].fuzztop, realHistory)
 	
 	# if nothing is found take a random note
-	logger.log("Failed to find random choice for history %s" % (history,))
+	logger.log("Failed to find random choice for history %s" % (normalizedHistory,))
 	return random.choice(alphabet)
 
 
@@ -79,9 +81,9 @@ def randomSong(ngramModel, startsequence, songlength, filename):
 	
 	# create list to fill with new notes
 	generated = list(startsequence)
- 	
- 	# fill the list with new notes
- 	for elem in range(songlength): 
+	
+	# fill the list with new notes
+	for elem in range(songlength): 
 	
 		# selects random note c with Pr(c|history)
 		nextNote = generator(history)
@@ -93,7 +95,7 @@ def randomSong(ngramModel, startsequence, songlength, filename):
 		# This is only creates a trigram history -> has to be changed if other ngrams are used
 		#history = (history[1], nextNote)
 		
-		history = music42.normalizeNotes(history[1:] + (nextNote,))
+		history = history[1:] + (nextNote,)
 		print "New History"
 		print history
 	
