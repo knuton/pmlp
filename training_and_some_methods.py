@@ -1,6 +1,6 @@
 #-----------------------------------------------------------------# 
 #
-# Name:		PMLP_alpha.py
+# Name:		PMLP_beta.py
 # Purpose: 	generate a simple song
 #
 # Version: 	04.07.2010
@@ -8,9 +8,6 @@
 #-----------------------------------------------------------------# 
 
 #from pudb import set_trace
-
-import nltk.probability
-from nltk.probability import *
 
 import music21.corpus
 import music21.stream
@@ -22,14 +19,14 @@ from statistics import frequency
 import sys, random, warnings
 
 #-----------------------------------------------------------------# 
-# Methods: 
+# Methods for training: 
 
 # getparts() creates a list that contains all part-names (instruments) that occur in a list of songs
-# this also parses the corpus
+# ATTENTION!!! This also parses the corpus  
 def getParts(songlist):
 	partlist = []
 	for elem in songlist:
-		song = music21.corpus.parseWork(elem) #might make this part a bit more efficient
+		song = music21.corpus.parseWork(elem) 
 		bigCorpus.append(song) # save time later 
 		parts = [part.id for part in song]
 		partlist.append(parts)
@@ -178,13 +175,35 @@ if not other_ngramlists:
 # print other_ngramlists
 
 # training finished
+
 #-----------------------------------------------------------------# 	
+# Methods for measure-generation
+
+# lengthPermitted checks whether a note (its quarterlength) can be added to a measure or not
+# if this is going to be used, having a large alphabet might be necessary so that a note with a permitted length can always be found
+def lengthPermitted(note, listofnotes):
+	sum = 0
+	for elem in listofnotes:
+		sum = sum + elem.quarterLength	
+	sum = sum + note.quarterLength
+	if sum <= 4: 
+		return True
+	else: 
+		return False
+
+# MeasureFull checks whether a measure is full or not
+def MeasureFull(notelist): 
+	sum = 0
+	for note in notelist: 
+		sum = sum + note.quarterLength
+	if sum == 4: 
+		return True
+	else: 	
+		return False
 
 
-
-# create other instrument's corpora
-
-
+#-----------------------------------------------------------------# 
+# below comes some old generation stuff
 
 """
 
