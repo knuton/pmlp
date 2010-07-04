@@ -14,14 +14,15 @@ def normalizeNotes(noteSequence = []):
 	return tuple([makeNote(note) for note in noteSequence])
 
 def firstActualNote(noteSequence):
-	return next((note for note in noteSequence if note.isNote), None)
+	firstNote = next((note for note in noteSequence if note.isNote), None)
+	return firstNote and makeNote(firstNote) or None
 
 def denormalizeNote(note, unnormalHistory):
 	""" De-normalizes a note generated form a normalized history using its unnormalized history. """
 	if note.isNote:
 		by = firstActualNote(unnormalHistory)
 		logger.debug(str(by) + ' applied to ' + str(note)) # DEBUG
-		return by and note.transpose(music21.interval.notesToInterval(cFour, by)) or note
+		return by and makeNote(note.transpose(music21.interval.notesToInterval(cFour, by))) or note
 	else:
 		return note
 
