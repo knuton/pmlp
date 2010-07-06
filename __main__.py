@@ -1,4 +1,7 @@
 import music21.corpus
+
+import datetime
+
 import corpus
 import training
 import generation
@@ -50,6 +53,7 @@ def menu():
 				break
 		if corpusName:
 			generate(collectionName, corpusName, xmls)
+		menu()
 	elif choice == 'l':
 		listCorpora()
 		raw_input("\n  Enter to return to menu.")
@@ -98,8 +102,13 @@ def generate(collection, corpus, xmls):
 	logger.status("Starting generation.")
 	generator = generation.Generator(trainer.results)
 	
-	song = generator.generate()
-	song.show()
+	again = 'a'
+	while again == 'a':
+		song = generator.generate()
+	
+		song.write('musicxml', '%s_%s_%s.xml' % (collection, corpus, datetime.datetime.now().isoformat()))
+		song.show()
+		again = str(raw_input("  `a` to create another, anything else to exit to menu > "))
 
 if __name__ == '__main__':
 	startup()
