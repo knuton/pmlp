@@ -10,7 +10,7 @@ class StateError(Exception):
 class Trainer:
 	""" Oversees the training on a collection of MusicXML files. """
 	
-	def __init__(self, collection = []):
+	def __init__(self, corpusCollection, corpus, xmls = []):
 		""" Creates the trainer. """
 		self._successful = False
 	
