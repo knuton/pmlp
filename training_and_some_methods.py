@@ -15,6 +15,7 @@ import music21.stream
 import corpus.persistence
 from statistics import ngram
 from statistics import frequency
+from tools import logger, music42
 
 import sys, random, warnings
 
@@ -111,7 +112,6 @@ if not leading_ngrams:
 	
 	#-----------------------------------------------------------------# 
 
-
 	# create leading_ngrams
 	flatLeading = [score.getElementById(str(topInstrument)).flat for score in bigCorpus if score.getElementById(str(topInstrument))]
 	
@@ -127,8 +127,10 @@ if not leading_ngrams:
 			lNT = leadingNotes[i:i+n]
 			[note for note in lNT]
 			# EOM
-			noteNGram = ngram.NoteNGram(lNT)
-			leading_ngrams.append((noteNGram.sequence[0:n-1], noteNGram.sequence[n-1]))
+			#noteNGram = ngram.NoteNGram(lNT)
+			#leading_ngrams.append((noteNGram.sequence[0:n-1], noteNGram.sequence[n-1]))
+			leading_ngrams.append(ngram.NoteNGram(lNT))
+			
 			
 	corpus.persistence.dump('leading', composer, leading_ngrams)
 	
@@ -137,8 +139,7 @@ if not leading_ngrams:
 	corpus.persistence.dump('final_instruments', composer, final_instruments)
 	corpus.persistence.dump('instrumentFreqDist', composer, instrumentFreqDist)
 	
-		
-
+	
 #print leading_ngrams
 
 #-----------------------------------------------------------------# 
@@ -149,31 +150,25 @@ if not other_ngramlists:
 	
 	# other_ngramlists is a list that will contain lists of ngrams for all other instruments (not the leading instrument)
 	other_ngramlists = []
-	
 	for instrument in final_instruments: 
-		
 		flatScore =  [score.getElementById(str(instrument)).flat for score in bigCorpus if score.getElementById(str(instrument))]
 		other_ngrams = []
-		
 		for member in flatScore: 
-			
 			memberNotes = member.notes
 			if len(memberNotes) < n:
 				continue
 			for i in range(0, len(memberNotes) - n):
 				mNT = memberNotes[i:i+n]
 				[note for note in mNT]
-				noteNgram = ngram.NoteNGram(mNT)
-				other_ngrams.append((noteNGram.sequence[0:n-1], noteNGram.sequence[n-1]))
-		
+				#noteNgram = ngram.NoteNGram(mNT)
+				#other_ngrams.append((noteNGram.sequence[0:n-1], noteNGram.sequence[n-1]))
+				other_ngrams.append(ngram.NoteNGram(mNT))
 		other_ngramlists.append(other_ngrams)
 		# or as tuple, containing the name of the instrument
 		#other_ngramlists.append(other_ngrams, str(Instrument))
-	
 	corpus.persistence.dump('others', composer, other_ngramlists)
-	
-# print other_ngramlists
 
+# print other_ngramlists
 # training finished
 
 #-----------------------------------------------------------------# 	
@@ -201,6 +196,206 @@ def MeasureFull(notelist):
 	else: 	
 		return False
 
+# 
+def makeLenCompatible(NewNote, listofnotes):
+	# List that contains all quarterlengths up from 1/64 to 1
+	allQuarterLengths = [0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625, 0.6875, 0.75, 0.8125, 0.875, 0.9375, 1.0, 1.0625, 1.125, 1.1875, 1.25, 1.3125, 1.375, 1.4375, 1.5, 1.5625, 1.625, 1.6875, 1.75, 1.8125, 1.875, 1.9375, 2.0, 2.0625, 2.125, 2.1875, 2.25, 2.3125, 2.375, 2.4375, 2.5, 2.5625, 2.625, 2.6875, 2.75, 2.8125, 2.875, 2.9375, 3.0, 3.0625, 3.125, 3.1875, 3.25, 3.3125, 3.375, 3.4375, 3.5, 3.5625, 3.625, 3.6875, 3.75, 3.8125, 3.875, 3.9375, 4.0]
+	sum = 0
+	# collect quarterlengths that occurred in the measure so far 
+	previousQuarterLengths = []
+	for elem in listofnotes:
+		sum = sum + elem.quarterLength
+		previousQuarterLengths.append(elem.quarterLength)
+	# determine which QLs are possible/compatible
+	end = allQuarterLengths.index(4-sum)
+	#start = allQuarterLengths.index(4)
+	compatibleQuarterLengths = allQuarterLengths[0:end]
+	# check which of the previously occurring QLs are compatible
+	# and add these QLs to allQLs in order to raise their probability
+	for QL in previousQuarterLengths: 
+		if QL in compatibleQuarterLengths:
+			# copy next line to make probability for previous QLs larger
+			compatibleQuarterLengths.append(QL) 
+			compatibleQuarterLengths.append(QL) # remove to make the probability smaller
+			compatibleQuarterLengths.append(QL) # remove to make the probability smaller
+			compatibleQuarterLengths.append(QL) # remove to make the probability smaller
+			compatibleQuarterLengths.append(QL) # remove to make the probability smaller
+	# choose a compatible QL for the current note
+	# higher probability for compatible QLs that occured before
+	NewNote.quarterLength = random.choice(compatibleQuarterLengths)
+	return NewNote
+
+
+#-----------------------------------------------------------------# 	
+# creativity: 
+
+
+leading_ngramCFD = corpus.persistence.load('leading_ngramCFD', composer)
+
+if not leading_ngramCFD: 
+	# create ngramDistribution for leading corpus
+	leading_ngramCFD = frequency.ConditionalFrequencyDistribution([noteNGram.conditionTuple for noteNGram in leading_ngrams])
+	
+	# store ngramDistribution
+	corpus.persistence.dump('leading_ngramCFD', composer, leading_ngramCFD)
+
+# create ngramDistributions for other copora
+
+"""
+# try to load otherNgramCFDs or create if it can't be loaded
+otherNgramCFDs = corpus.persistence.load('otherNgramCFDs', composer)
+
+if not otherNgramCFDs: 
+
+	otherNgramCFDs = []
+	for otherCorpus in other_ngramlists: 
+
+		otherNgramCFD = frequency.ConditionalFrequencyDistribution([noteNGram.conditionTuple for noteNGram in otherCorpus])
+	
+		otherNgram_CFDs.append(otherNgramCFD)
+		
+	corpus.persistence.dump('otherNgramCFDs', composer, otherNgramCFDs)
+"""	
+# determine an alphabet: 
+# so far it is only for leading corpus (we should add other corpora/notes from other corpora too e.g. by creating an alphabet from all corpora and eliminating copies)
+alphabet = leading_ngramCFD.sampleSpace
+
+# generate a new note (if possible based on its probability given a certain history)
+def generator(realHistory, ngramCFD):
+	
+	normalizedHistory = music42.normalizeNotes(realHistory)
+	
+	if ngramCFD[normalizedHistory].top:
+		return music42.denormalizeNote(ngramCFD[normalizedHistory].fuzztop, realHistory)
+	
+	# if nothing is found take a random note
+	logger.log("Failed to find random choice for history %s" % (normalizedHistory,))
+	return random.choice(alphabet)
+
+# randomSong creates a new song (or rather a new Part)
+def randomSong(ngramModel, startsequence, numOfMeasures, filename):
+	# n is the order of the ngram (e.g. 3)
+	#n = len(startsequence)
+	n = 3
+	#history = startsequence[len(startsequence)-n:len(startsequence)] 
+	history = startsequence
+	print "First History"
+	print history
+	# create a list to fill with new measures
+	generated = []
+
+	i = 0 
+	while i <= numOfMeasures: 
+		measure = []
+		# filling the measure
+		while not MeasureFull(measure):
+			nextNote = generator(history, ngramModel)
+			# check whether note fits into the measure
+			
+			#while not lengthPermitted(nextNote, measure):
+			#	nextNote = generator(history)
+			
+			# make length of the next note compatible if it isn't 
+			if not lengthPermitted(nextNote, measure):
+				nextNote = makeLenCompatible(nextNote, measure)
+			
+			measure.append(nextNote)	
+			# update history
+			history = history[1:] + (nextNote,)
+			
+		# add measure to song
+		generated.append(measure)
+		i = i + 1
+			
+	# create a music21 part
+	leadingPart = music21.stream.Part()
+	
+	for measure in generated:
+		m = music21.stream.Measure()
+		
+		# create measure
+		for note in measure: 
+			m.append(note)
+			
+		# append measure to part
+		leadingPart.append(m)
+	# create a score
+	s = music21.stream.Score()
+	# insert part into score
+	s.insert(0, leadingPart)
+	# show score
+	s.show()
+	
+# so far start only consists of 2 arbitrary notes
+# could be something more sophisticated like a real intro 
+start = random.choice(leading_ngramCFD.conditions)
+logger.log(start)
+
+# choose a filename
+songname = raw_input("Enter a name for the new song: ")
+
+# create a new song 
+print "here comes the music"
+randomSong(leading_ngramCFD, start, 2, songname)
+
+#-----------------------------------------------------------------# 
+# random song for many parts
+"""
+def randomSong(leadingModel, leadingStartsequence, listOfModels, listOfStartsequences, numOfMeasures, filename):
+	# n is the order of the ngram (e.g. 3)
+	#n = len(startsequence)
+	n = 3
+	#history = startsequence[len(startsequence)-n:len(startsequence)] 
+	leadingHistory = startsequence
+	print "First History"
+	print leadingHistory
+	# create a list to fill with new measures
+	leading_generated = []
+	others_generated = []
+
+	i = 0 
+	while i <= numOfMeasures: 
+		measure = []
+		# filling the measure
+		while not MeasureFull(measure):
+			nextNote = generator(history, leadingModel)
+			# check whether note fits into the measure
+			
+			#while not lengthPermitted(nextNote, measure):
+			#	nextNote = generator(history)
+			
+			# make length of the next note compatible if it isn't 
+			if not lengthPermitted(nextNote, measure):
+				nextNote = makeLenCompatible(nextNote, measure)
+			
+			measure.append(nextNote)	
+			# update history
+			history = history[1:] + (nextNote,)
+			
+		# add measure to song
+		generated.append(measure)
+		i = i + 1
+			
+	# create a music21 part
+	leadingPart = music21.stream.Part()
+	
+	for measure in generated:
+		m = music21.stream.Measure()
+		
+		# create measure
+		for note in measure: 
+			m.append(note)
+			
+		# append measure to part
+		leadingPart.append(m)
+	# create a score
+	s = music21.stream.Score()
+	# insert part into score
+	s.insert(0, leadingPart)
+	# show score
+	s.show()
+
+"""
 
 #-----------------------------------------------------------------# 
 # below comes some old generation stuff
