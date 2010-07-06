@@ -1,15 +1,16 @@
 import music21.corpus
 import corpus
 import training
+import generation
 from tools import logger
 
-logo = """
-                 .__          
-  ______   _____ |  | ______  
-  \____ \ /     \|  | \____ \ 
-  |  |_> >  Y Y  \  |_|  |_> >
-  |   __/|__|_|  /____/   __/ 
-  |__|         \/     |__|    """
+logo = """                                    ___ 
+                 .__               |___|
+  ______   _____ |  | ______      _|  _|
+  \____ \ /     \|  | \____ \    (@) (@)
+  |  |_> >  Y Y  \  |_|  |_> >          
+  |   __/|__|_|  /____/   __/           
+  |__|         \/     |__|              """
 
 def startup():
 	print logo
@@ -38,7 +39,7 @@ def menu():
 		corpusName = None
 		xmls = []
 		while not collectionName in ['pmlp', 'music21']:
-			collectionName = str(raw_input("  Generate from PMLP (`pmlp`) or music21 (`music21`) corpus? (Abort with `a`) > "))
+			collectionName = str(raw_input("  Generate from a PMLP (`pmlp`) or music21 (`music21`) corpus? (Abort with `a`) > "))
 			if collectionName == 'pmlp':
 				corpusName = chooseCorpus('pmlp')
 				xmls = corpus.getCollection(corpusName)
@@ -93,9 +94,12 @@ def generate(collection, corpus, xmls):
 	logger.status("Starting analysis.")
 	trainer = training.Trainer(collection, corpus, xmls)
 	trainer.run()
-	resultSet = trainer.results
 	logger.status("Finished anaylsis.")
 	logger.status("Starting generation.")
+	generator = generation.Generator(trainer.results)
+	
+	song = generator.generate()
+	song.show()
 
 if __name__ == '__main__':
 	startup()
