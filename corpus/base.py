@@ -2,6 +2,12 @@ import os
 
 import music21.converter
 
+def listCollections():
+	""" List subfolders in collection folder. """
+	dirName = os.path.join(os.path.dirname(__file__), 'collections')
+	dirLs = [os.path.join(dirContent) for dirContent in os.listdir(dirName) if os.path.isdir(os.path.join(dirName, dirContent))]
+	return dirLs
+
 def getCollection(name):
 	""" Look in collections folder for subfolder with provided name and return paths to contained XML files.
 	
