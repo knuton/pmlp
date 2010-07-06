@@ -10,6 +10,10 @@ def error(message):
 def log(message):
 	_recordLine(message, 'journal')
 
+def status(message):
+	log(message)
+	print "  * " + message
+
 def _recordLine(message, logType):
 	try:
 		with open(_pathToLogs(logType), 'a') as f:
