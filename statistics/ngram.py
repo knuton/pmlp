@@ -45,6 +45,33 @@ class NGram:
 	
 	sequence = property(_getSequence)
 	
+	def _getCondition(self):
+		""" Returns the sequence of conditions, i.e. all but the last item. """
+		return self.sequence[:-1]
+	
+	condition = property(_getCondition,
+	doc = """ Returns the sequence of conditions, i.e. all but the last item. 
+	
+	>>> NGram(['a', 'b', 'c']).condition
+	('a', 'b')
+	>>> NGram([]).condition
+	()
+	""")
+	
+	def _getSample(self):
+		""" Returns the sample, i.e. the last item. """
+		if len(self.sequence) == 0:
+			return None
+		return self.sequence[-1]
+	
+	sample = property(_getSample,
+	doc = """ Returns the sample, i.e. the last item.
+	
+	>>> NGram(['a', 'b', 'c']).sample
+	'c'
+	>>> NGram([]).sample
+	""")
+	
 	def _getConditionTuple(self):
 		""" Return a pair with first projection sequence[0:n-1], second projection sequence[n-1].
 		
@@ -53,7 +80,7 @@ class NGram:
 		>>> NGram(['a', 'b', 'c'])._getConditionTuple()
 		(('a', 'b'), 'c')
 		"""
-		return (self.sequence[0:self.n-1], self.sequence[self.n-1])
+		return (self.condition, self.sample)
 	
 	conditionTuple = property(_getConditionTuple)
 

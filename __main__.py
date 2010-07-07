@@ -98,7 +98,7 @@ def generate(collection, corpus, xmls):
 	logger.status("Starting analysis.")
 	trainer = training.Trainer(collection, corpus, xmls)
 	trainer.run()
-	logger.status("Finished anaylsis.")
+	logger.status("Finished analysis.")
 	logger.status("Starting generation.")
 	generator = generation.Generator(trainer.results)
 	
