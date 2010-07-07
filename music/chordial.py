@@ -1,3 +1,46 @@
+import music21.chord
+
+class SimpleChord:
+	""" Represents a very simple chord. """
+	
+	scale = ['C', 'D-', 'D', 'E-', 'E', 'F', 'G-', 'G', 'A-', 'A', 'B-', 'B']
+	
+	def __init__(self, name, quarterLength):
+		""" Creates a chord with a name of the form X or Xm with its quarter length. """
+		self._root = name[0]
+		self._quarterLength = quarterLength
+		if len(name) > 1:
+			self._major = False
+		else:
+			self._major = True
+	
+	def getSerious(self):
+		""" Returns a music21 chord. 
+		
+		>>> sc = SimpleChord('C', 4)
+		>>> sc.getSerious().root()
+		C
+		>>> sc.getSerious().determineType()
+		'Major Triad'
+		>>> scm = SimpleChord('Cm', 4)
+		>>> scm.getSerious().determineType()
+		'Minor Triad'
+		>>> sce = SimpleChord('Am', 4)
+		>>> sce.getSerious().determineType()
+		'Minor Triad'
+		"""
+		startpos = self.__class__.scale.index(self._root)
+		notenames = [self._root]
+		notenames.append(self._circularIndex(startpos + 7))
+		if self._major:
+			notenames.append(self._circularIndex(startpos + 4))
+		else:
+			notenames.append(self._circularIndex(startpos + 3))
+		return music21.chord.Chord(notenames)
+	
+	def _circularIndex(self, index):
+		return self.__class__.scale[index % len(self.__class__.scale)]
+
 class ChordProgression:
 	""" Holds a chord progression with chords and their offsets. """
 	
