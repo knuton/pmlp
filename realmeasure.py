@@ -27,10 +27,17 @@ import sys, random, warnings
 # ATTENTION!!! This also parses the corpus  
 def getParts(songlist):
 	partlist = []
+	### songlist: List of XML files
 	for elem in songlist:
+		### Parse XML file
 		song = music21.corpus.parseWork(elem) 
-		bigCorpus.append(song) # save time later 
-		parts = [part.id for part in song]
+		### Save all parsed songs in common container
+		bigCorpus.append(song)
+		### Get unique identification string
+		### http://web.mit.edu/music21/doc/html/moduleBase.html#music21.base.Music21Object.id
+		parts = [part.id for part in song if not isinstance(part.id, int)]
+		### partlist: A list of lists
+		### Per song one list with all the partnames
 		partlist.append(parts)
 	return partlist
 
@@ -44,6 +51,8 @@ def removeInts(partlist):
 	return partlist
 
 # 3d list to 2d list (all elements in one big list - no lists in lists)
+### Duplicates are a feature
+### This could be integrated in getParts()
 def flattenList(list_with_lists): 
 	list_without_lists = []
 	for list in list_with_lists:
@@ -52,9 +61,11 @@ def flattenList(list_with_lists):
 	return list_without_lists
 
 # remove all instruments you don't want to train on
+### Fed with output from flattenList()
 def finalInstruments(flatlist):
 	final_instruments = []
 	freqdist = frequency.FrequencyDistribution(flatlist)
+	### border: Grenzwert fuer Aufnahme als Instrument bei Generierung
 	border = int(freqdist.relativeFrequency(freqdist.top)/2*100)
 	for elem in freqdist.samples():
 		if freqdist[elem] >= border: 
@@ -72,12 +83,14 @@ composer = 'bach'
 
 n = 6
 
+### Common container for parsed songs
 global bigCorpus 
 bigCorpus = []
-"""
+
 
 #-----------------------------------------------------------------# 
-# load leading-instrument copus or create it if it isn't there 
+# load leading-instrument copus or create it if it isn't there
+### These are the ngrams
 leading_ngrams = corpus.persistence.load('leading', composer)
 
 
@@ -612,64 +625,3 @@ for cfd in otherNgramCFDs:
 
 # create a new concert
 randomConcert(leading_ngramCFD, otherNgramCFDs, start, otherStarts, 10, songname)
-
-
-#-----------------------------------------------------------------# 
-# random song for many parts
-"""
-def randomSong(leadingModel, leadingStartsequence, listOfModels, listOfStartsequences, numOfMeasures, filename):
-	# n is the order of the ngram (e.g. 3)
-	#n = len(startsequence)
-	n = 3
-	#history = startsequence[len(startsequence)-n:len(startsequence)] 
-	leadingHistory = startsequence
-	print "First History"
-	print leadingHistory
-	# create a list to fill with new measures
-	leading_generated = []
-	others_generated = []
-
-	i = 0 
-	while i <= numOfMeasures: 
-		measure = []
-		# filling the measure
-		while not MeasureFull(measure):
-			nextNote = generator(history, leadingModel)
-			# check whether note fits into the measure
-			
-			#while not lengthPermitted(nextNote, measure):
-			#	nextNote = generator(history)
-			
-			# make length of the next note compatible if it isn't 
-			if not lengthPermitted(nextNote, measure):
-				nextNote = makeLenCompatible(nextNote, measure)
-			
-			measure.append(nextNote)	
-			# update history
-			history = history[1:] + (nextNote,)
-			
-		# add measure to song
-		generated.append(measure)
-		i = i + 1
-			
-	# create a music21 part
-	leadingPart = music21.stream.Part()
-	
-	for measure in generated:
-		m = music21.stream.Measure()
-		
-		# create measure
-		for note in measure: 
-			m.append(note)
-			
-		# append measure to part
-		leadingPart.append(m)
-	# create a score
-	s = music21.stream.Score()
-	# insert part into score
-	s.insert(0, leadingPart)
-	# show score
-	s.show()
-
-"""
-
