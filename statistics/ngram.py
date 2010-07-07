@@ -7,7 +7,9 @@ import music21.note
 import music21.duration
 import music21.interval
 import music21.stream
+
 import tools.music42
+from music import chordial
 
 class NGram:
 	""" An n-gram is a sequence of n items, taken from a larger sequence.
@@ -127,6 +129,16 @@ class NoteNGram(NGram):
 		noteSequence = tools.music42.normalizeNotes(noteSequence)
 		
 		NGram.__init__(self, noteSequence)
+
+class ChordNGram(NGram):
+	""" An ngram for chords, incorporating chords and their quarter length. """
+	
+	def __init__(self, chordSequence = []):
+		""" Create an ngram from a chord sequence. 
+		
+		Sequence should consist of pmlp.music.chordial.SimpleChord objects.
+		"""
+		
 
 
 if __name__ == "__main__":
