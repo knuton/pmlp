@@ -2,4 +2,5 @@
 .DS_Store
 io/*
 corpus/dumps/*
+corpus/collections/*
 logs/
