@@ -4,6 +4,8 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # --- End of parent loading
 
+import copy
+
 import music21.corpus
 import music21.stream
 
@@ -23,21 +25,62 @@ class Trainer:
 		self._collectionName = corpusCollection
 		self._corpusName = corpusName
 		self._sourceFiles = xmls
-		self._parsedCorpus = []
+		
+		self._analysums = [
+			'melody'
+		]
+		
+		self._melody = frequency.ConditionalFrequencyDistribution()
+		
 		self._successful = False
 	
 	def run(self):
 		""" Starts the training. """
-		logger.status("Parsing XML files.")
-		self._parsedCorpus = [self._parse(xmlScore) for xmlScore in self._sourceFiles]
+		logger.status("Parsing and analysing %i XML files." % len(self._sourceFiles))
 		
-		logger.status("Analysing melody.")
-		self._analyseMelody()
+		self._hitDumps()
 		
-		logger.status("Analysing more stuff later. :)")
+		if len(self._analysums) > 0:
+			for i in range(len(self._sourceFiles)):
+				xmlScore = self._sourceFiles[i]
+				logger.status("Processing %i of %i. (%s)" % (i+1, len(self._sourceFiles), xmlScore))
+				self._processScore(xmlScore)
+			
+			self._writeDumps()
 		
 		self._successful = True
 		return True
+	
+	def _processScore(self, xmlScore):
+		""" From an XML file process a score. """
+		inMemory = self._parse(xmlScore)
+		
+		# YOU ARE HERE!
+		for analysum in self._analysums:
+			logger.status("Analysing %s." % analysum)
+			getattr(self, '_%sAnalysis' % analysum)(inMemory)
+	
+	def _hitDumps(self):
+		""" Try to get all analysums from dumps and cross them from the todo list if found. """
+		todo = copy.deepcopy(self._analysums)
+		for analysum in self._analysums:
+			logger.status("Looking for previously saved %s analysis." % analysum)
+			dump = self._loadFromCorpus(analysum)
+			if dump:
+				setattr(self, '_' + analysum, dump)
+				todo.remove(analysum)
+				logger.status("Using previously analysed data.")
+			else:
+				logger.status("Found no previously analysed data.")
+		self._analysums = todo
+	
+	def _writeDumps(self):
+		todo = copy.deepcopy(self._analysums)
+		for analysum in self._analysums:
+			logger.status("Dumping results of %s analysis." % analysum)
+			self._dumpToCorpus(analysum, getattr(self, '_' + analysum))
+			todo.remove(analysum)
+		self._analysums = todo
 	
 	def _parse(self, xml):
 		if self._collectionName == 'pmlp':
@@ -45,36 +88,28 @@ class Trainer:
 		else:
 			return music21.corpus.parseWork(xml)
 	
-	def _analyseMelody(self):
+	def _melodyAnalysis(self, m21score):
 		""" Analyses the melody style of a corpus. """
-		melodyCFD = self._loadFromCorpus('melody')
+		n = 5
+		logger.status("Creating melody ngrams for a score.")
 		
-		if not melodyCFD:
-			logger.status("Found no previously analysed data.")
-			# Get flattened parts
-			flattenedParts = [score[0].flat for score in self._parsedCorpus if score[0]]
-			
-			trigrams = []
-			n = 5
-			
-			for score in flattenedParts: #remove
-				scoreNotes = score.notes
-				if len(scoreNotes) < n:
-					continue
-				for i in range(0, len(scoreNotes) - n):
-					logger.status("Creating melody ngrams for a score.")
-					# THIS IS NECESSARY MAGIC!
-					sNT = scoreNotes[i:i+n]
-					[note for note in sNT]
-					# EOM
-					trigrams.append(ngram.NoteNGram(sNT))
-			
-			melodyCFD = frequency.ConditionalFrequencyDistribution([noteNGram.conditionTuple for noteNGram in trigrams])
-			self._dumpToCorpus('melody', melodyCFD)
-		else:
-			logger.status("Using previously analysed data.")
+		if not m21score[0]:
+			return
 		
-		self._melody = melodyCFD
+		scoreNotes = m21score[0].flat.notes
+		
+		if len(scoreNotes) < n:
+			return
+		
+		for i in range(0, len(scoreNotes) - n):
+			# THIS IS NECESSARY MAGIC!
+			sNT = scoreNotes[i:i+n]
+			[note for note in sNT]
+			# EOM
+			noteNGram = ngram.NoteNGram(sNT)
+			self._melody.seenOnCondition(noteNGram.condition, noteNGram.sample)
+		
+		logger.status("Conditional frequency distribution has %i conditions." % len(self._melody))
 	
 	def _loadFromCorpus(self, dataType):
 		return corpus.persistence.load(dataType, self._collectionName, self._corpusName)
