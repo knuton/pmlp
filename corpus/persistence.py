@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # --- End of parent loading
-import pickle
+import cPickle as pickle
 from tools import logger
 
 def dump(dataType, data, *corpusID):
