@@ -1,4 +1,53 @@
 import music21.chord
+import pdb
+
+def fromNotes(stream):
+	""" Creates a chord progression guessed from a sequence of notes.
+	
+	>>> from music21 import note
+	>>> from music21 import stream
+	>>> s = stream.Stream()
+	>>> s.append(note.Note('G', type = 'half'))
+	>>> s.append(note.Note('B', type = 'quarter'))
+	>>> s.append(note.Note('D', type = 'quarter'))
+	>>> s.append(note.Note('G#', type = 'half'))
+	>>> s.append(note.Note('C', type = 'quarter'))
+	>>> s.append(note.Note('D#', type = 'quarter'))
+	>>> cp = fromNotes(s)
+	>>> str(cp)
+	'G       '
+	"""
+	cp = ChordProgression()
+	
+	noteStream = stream.flat.notes
+	totalBeats = noteStream.duration.quarterLength
+	
+	beatPos = 0
+	
+	pdb.set_trace()
+	
+	while beatPos < totalBeats:
+		quarterLenBeats = 8
+		while quarterLenBeats > 1:
+			guessedChord = _findChord(
+				noteStream.getElementsByOffset(beatPos, beatPos + quarterLenBeats, False)
+			)
+			if guessedChord:
+				cp.addChordAt(guessedChord, beatPos)
+				beatPos += quarterLenBeats
+				break
+			quarterLenBeats /= 2
+	
+	return cp
+
+def _findChord(noteStream):
+	found = music21.chord.Chord(noteStream)
+	foundType = found.determineType()
+	if foundType == 'Major Triad':
+		return found.root().name
+	if foundType == 'Minor Triad':
+		return found.root().name + 'm'
+	return None
 
 class SimpleChord:
 	""" Represents a very simple chord. """
@@ -38,8 +87,32 @@ class SimpleChord:
 			notenames.append(self._circularIndex(startpos + 3))
 		return music21.chord.Chord(notenames)
 	
+	def _getName(self):
+		""" Returns the name of the chord. """
+		if not self._major:
+			return self._root + 'm'
+		return self._root
+	
+	name = property(_getName,
+	doc = """ Returns the name of the chord.
+	
+	>>> SimpleChord('Am', 4).name
+	'Am'
+	""")
+	
+	def _getQuarterLength(self):
+		""" Returns the quarter length of the chord. """
+		return self._quarterLength
+	
+	quarterLength = property(_getQuarterLength,
+	doc = """ Returns the quarter length of the chord. """
+	)
+	
 	def _circularIndex(self, index):
 		return self.__class__.scale[index % len(self.__class__.scale)]
+	
+	def __str__(self):
+		return '[%s, %f]' % (self.names, self._quarterLength)
 
 class ChordProgression:
 	""" Holds a chord progression with chords and their offsets. """
@@ -59,13 +132,18 @@ class ChordProgression:
 		""" Returns the chord at the provided quarter time.
 		
 		>>> cp = ChordProgression([('G', 0), ('C', 4)])
-		>>> cp.chordAt(3)
+		>>> cp.chordAt(3).name
 		'G'
-		>>> cp.chordAt(5)
+		>>> cp.chordAt(5).name
 		'C'
 		"""
-		lastChordOnset = self._binaryFind(quarterTime)
-		return self._chordOnsets[lastChordOnset]
+		lastChordOnsetIndex = self._binaryFindIndex(quarterTime)
+		lastChordOnset = self._onsetList[lastChordOnsetIndex]
+		if lastChordOnsetIndex < len(self._onsetList) - 1:
+			duration = self._onsetList[lastChordOnsetIndex + 1] - lastChordOnset
+		else:
+			duration = 4
+		return SimpleChord(self._chordOnsets[lastChordOnset], duration)
 	
 	def addChordAt(self, chord, quarterTime):
 		""" Adds the chord at the provided quarter time. 
@@ -76,9 +154,9 @@ class ChordProgression:
 		
 		>>> cp = ChordProgression([('G', 0), ('C', 4)])
 		>>> cp.addChordAt('D', 2)
-		>>> cp.chordAt(3)
+		>>> cp.chordAt(3).name
 		'D'
-		>>> cp.chordAt(4)
+		>>> cp.chordAt(4).name
 		'C'
 		"""
 		self._chordOnsets[quarterTime] = chord
@@ -108,10 +186,28 @@ class ChordProgression:
 		
 		return self._onsetList[current]
 	
+	def __iter__(self):
+		""" Returns an iterator for a chord progression. 
+		
+		>>> cp = ChordProgression([('G', 0), ('C', 4)])
+		>>> [c.name for c in cp]
+		['G', 'C']
+		"""
+		return iter([self.chordAt(onset) for onset in self._onsetList])
+	
 	def _binaryFindIndex(self, quarterTime):
 		""" Return the index of the last onset prior to the provided quarter time. """
 		return self._binaryFind(quarterTime, True)
+	
+	def __str__(self):
+		""" Returns a string representation of the chord progression.
 		
+		>>> cp = ChordProgression([('G', 0), ('C', 4)])
+		>>> str(cp)
+		'G   C   '
+		"""
+		return ''.join([chord.name.ljust(int(chord.quarterLength)) for chord in self])
+	
 if __name__ == "__main__":
 	import doctest
 	doctest.testmod()
