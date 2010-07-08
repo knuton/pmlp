@@ -120,6 +120,26 @@ class FrequencyDistribution:
 	'a'
 	""")
 	
+	def getByPercentage(self, percentage):
+		""" Get all samples that appear at least as often as the given percentage.
+		
+		>>> newFreak = FrequencyDistribution(['a', 'b', 'b', 'c', 'd', 'e', 'f'])
+		>>> newFreak.getByPercentage(5)
+		Traceback (most recent call last):
+			...
+		ValueError: Percentage needs to be between 0 and 1
+		>>> newFreak.getByPercentage(0.20)
+		['b']
+		"""
+		if percentage < 0 or percentage > 1:
+			raise ValueError('Percentage needs to be between 0 and 1')
+		i = 0
+		while i < len(self._sampleHeap) and self.relativeFrequency(self._sampleHeap[i]) >= percentage:
+			i += 1
+		if i > 0:
+			return self._sampleHeap[0:i]
+		return []
+	
 	def _getTotal(self):
 		""" Returns the number of total sample tokens. """
 		return self._total_tokens
