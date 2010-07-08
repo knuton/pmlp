@@ -63,6 +63,10 @@ def fromNotes(stream):
 				guessedChord = _findChord(
 					[music42.firstActualNote(noteStream.getElementsByOffset(beatPos, beatPos + quarterLenBeats, False))]
 				)
+				if guessedChord:
+					cp.addChordAt(guessedChord, beatPos)
+				beatPos += 1
+				break
 			quarterLenBeats /= 2
 	
 	return cp
