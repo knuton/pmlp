@@ -107,7 +107,10 @@ def generate(collection, corpus, xmls):
 		song = generator.generate()
 	
 		song.write('musicxml', '%s_%s_%s.xml' % (collection, corpus, datetime.datetime.now().isoformat()))
-		song.show()
+		try:
+			song.show()
+		except EnvironmentException:
+			logger.journal("Couldn't use show method to display generated score.")
 		again = str(raw_input("  `a` to create another, anything else to exit to menu > "))
 
 if __name__ == '__main__':
