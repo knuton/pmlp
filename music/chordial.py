@@ -1,3 +1,11 @@
+# --- Add parent dir to paths for doctest compatiable intra-package imports
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# --- End of parent loading
+
+from tools import music42
+
 import music21.chord
 import music21.interval
 import pdb
@@ -19,6 +27,20 @@ def fromNotes(stream):
 	>>> cp = fromNotes(s)
 	>>> str(cp)
 	'G   G#  '
+	
+	Getting mean now:
+	>>> s = stream.Stream()
+	>>> s.append(note.Note('C'))
+	>>> s.append(note.Note('C#'))
+	>>> s.append(note.Note('D'))
+	>>> s.append(note.Note('D#'))
+	>>> s.append(note.Note('E'))
+	>>> s.append(note.Note('F'))
+	>>> s.append(note.Note('F#'))
+	>>> s.append(note.Note('G'))
+	>>> cp = fromNotes(s)
+	>>> str(cp)
+	'CC#DD#EFF#G   '
 	"""
 	cp = ChordProgression()
 	
@@ -29,23 +51,28 @@ def fromNotes(stream):
 	
 	while beatPos < totalBeats:
 		quarterLenBeats = 8
-		while quarterLenBeats > 1:
+		while quarterLenBeats >= 1:
 			guessedChord = _findChord(
-				noteStream.getElementsByOffset(beatPos, beatPos + quarterLenBeats, False)
+				[note for note in noteStream.getElementsByOffset(beatPos, beatPos + quarterLenBeats, False) if note.isNote]
 			)
 			if guessedChord:
 				cp.addChordAt(guessedChord, beatPos)
 				beatPos += quarterLenBeats
 				break
+			if quarterLenBeats == 1:
+				guessedChord = _findChord(
+					[music42.firstActualNote(noteStream.getElementsByOffset(beatPos, beatPos + quarterLenBeats, False))]
+				)
 			quarterLenBeats /= 2
 	
 	return cp
 
-def _findChord(noteStream):
+def _findChord(notes):
 	""" Guess chord from a stream of notes.
 	
 	>>> from music21 import note
 	>>> from music21 import stream
+	>>> from music21 import chord
 	>>> s = stream.Stream()
 	>>> s.append(note.Note('G#', type = 'half'))
 	>>> s.append(note.Note('C', type = 'quarter'))
@@ -60,9 +87,15 @@ def _findChord(noteStream):
 	>>> s.append(note.Note('D#', type = 'quarter'))
 	>>> _findChord(s)
 	'G#m'
+	
+	>>> _findChord([])
 	"""
-	found = music21.chord.Chord(noteStream)
-	rootPitch = found.root()
+	found = music21.chord.Chord(notes)
+	
+	try:
+		rootPitch = found.root()
+	except music21.chord.ChordException:
+		return None
 	
 	if not rootPitch:
 		return None
