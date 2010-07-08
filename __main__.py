@@ -1,4 +1,5 @@
 import music21.corpus
+import music21.environment
 
 import datetime
 
@@ -109,7 +110,7 @@ def generate(collection, corpus, xmls):
 		song.write('musicxml', '%s_%s_%s.xml' % (collection, corpus, datetime.datetime.now().isoformat()))
 		try:
 			song.show()
-		except EnvironmentException:
+		except music21.environment.EnvironmentException:
 			logger.journal("Couldn't use show method to display generated score.")
 		again = str(raw_input("  `a` to create another, anything else to exit to menu > "))
 
