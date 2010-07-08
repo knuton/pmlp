@@ -5,6 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # --- End of parent loading
 
 import copy
+import collections
 
 import music21.corpus
 import music21.stream
@@ -26,11 +27,14 @@ class Trainer:
 		self._corpusName = corpusName
 		self._sourceFiles = xmls
 		
+		# Order matters
 		self._analysums = [
-			'melody'
+			'instruments', 'melody', 'bandSize'
 		]
 		
-		self._melody = frequency.ConditionalFrequencyDistribution()
+		self._melody = collections.defaultdict(frequency.ConditionalFrequencyDistribution)
+		self._instruments = frequency.FrequencyDistribution()
+		self._bandSize = 0
 		
 		self._successful = False
 	
@@ -88,28 +92,52 @@ class Trainer:
 		else:
 			return music21.corpus.parseWork(xml)
 	
+	def _bandSizeAnalysis(self, m21score):
+		""" Calls melody analysis if this hasn't been done yet. """
+		if len(self._instruments) == 0:
+			self._bandSize = 0
+		self._bandSize = len(self._instruments.getByPercentage(self._instruments.relativeFrequency(self._instruments.top)/2.0))
+
+	def _instrumentsAnalysis(self, m21score):
+		""" Adds a scores instruments to the list of instruments. """
+		for part in m21score:
+			if not isinstance(part.id, int):
+				partName = str(part.id)
+				logger.status("Instrument %s occurs in score." % partName)
+				self._instruments.seen(partName)
+	
 	def _melodyAnalysis(self, m21score):
 		""" Analyses the melody style of a corpus. """
-		n = 5
 		logger.status("Creating melody ngrams for a score.")
 		
 		if not m21score[0]:
 			return
 		
-		scoreNotes = m21score[0].flat.notes
+		for part in m21score:
+			self._partMelodyAnalysis(part)
+	
+	def _partMelodyAnalysis(self, m21part):
+		""" Analyses one stream of notes. """
+		n = 5
 		
-		if len(scoreNotes) < n:
+		if isinstance(m21part.id, int):
 			return
 		
-		for i in range(0, len(scoreNotes) - n):
+		partName = str(m21part.id)
+		partNotes = m21part.flat.notes
+		
+		if len(partNotes) < n:
+			return
+		
+		for i in range(0, len(partNotes) - n):
 			# THIS IS NECESSARY MAGIC!
-			sNT = scoreNotes[i:i+n]
+			sNT = partNotes[i:i+n]
 			[note for note in sNT]
 			# EOM
 			noteNGram = ngram.NoteNGram(sNT)
-			self._melody.seenOnCondition(noteNGram.condition, noteNGram.sample)
+			self._melody[partName].seenOnCondition(noteNGram.condition, noteNGram.sample)
 		
-		logger.status("Conditional frequency distribution has %i conditions." % len(self._melody))
+		logger.status("Conditional frequency distribution for %s has %i conditions." % (partName, len(self._melody[partName])))
 	
 	def _loadFromCorpus(self, dataType):
 		return corpus.persistence.load(dataType, self._collectionName, self._corpusName)
@@ -123,7 +151,9 @@ class Trainer:
 			raise StateError("no results available yet")
 		
 		return {
-			'melody' : self._melody
+			'melody' : self._melody,
+			'bandSize' : self._bandSize,
+			'instruments' : self._instruments
 		}
 	
 	results = property(_getResults,
