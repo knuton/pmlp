@@ -1,5 +1,8 @@
 import music21.chord
+import music21.interval
 import pdb
+
+ILLEGAL_INTERVALS = [1]
 
 def fromNotes(stream):
 	""" Creates a chord progression guessed from a sequence of notes.
@@ -15,7 +18,7 @@ def fromNotes(stream):
 	>>> s.append(note.Note('D#', type = 'quarter'))
 	>>> cp = fromNotes(s)
 	>>> str(cp)
-	'G       '
+	'G   G#  '
 	"""
 	cp = ChordProgression()
 	
@@ -23,8 +26,6 @@ def fromNotes(stream):
 	totalBeats = noteStream.duration.quarterLength
 	
 	beatPos = 0
-	
-	pdb.set_trace()
 	
 	while beatPos < totalBeats:
 		quarterLenBeats = 8
@@ -41,13 +42,66 @@ def fromNotes(stream):
 	return cp
 
 def _findChord(noteStream):
+	""" Guess chord from a stream of notes.
+	
+	>>> from music21 import note
+	>>> from music21 import stream
+	>>> s = stream.Stream()
+	>>> s.append(note.Note('G#', type = 'half'))
+	>>> s.append(note.Note('C', type = 'quarter'))
+	>>> s.append(note.Note('D#', type = 'quarter'))
+	>>> _findChord(s)
+	'G#'
+	>>> s = stream.Stream()
+	
+	Now testing a minor chord.
+	>>> s.append(note.Note('G#', type = 'half'))
+	>>> s.append(note.Note('C-', type = 'quarter'))
+	>>> s.append(note.Note('D#', type = 'quarter'))
+	>>> _findChord(s)
+	'G#m'
+	"""
 	found = music21.chord.Chord(noteStream)
-	foundType = found.determineType()
-	if foundType == 'Major Triad':
-		return found.root().name
-	if foundType == 'Minor Triad':
-		return found.root().name + 'm'
-	return None
+	rootPitch = found.root()
+	
+	if not rootPitch:
+		return None
+	
+	minority = ''
+	
+	rootPitchClass = rootPitch.pitchClass
+	pitchClasses = [pitch.pitchClass for pitch in found.pitches]
+	
+	for pitchClass in pitchClasses:
+		if _isIllegal(rootPitchClass, pitchClass):
+			return None
+		if (rootPitchClass + 3) % 12 == pitchClass:
+			minority = 'm'
+	return rootPitch.name + minority
+
+def _isIllegal(pitchClassA, pitchClassB):
+	""" Checks whether interval is illegal.
+	
+	>>> _isIllegal(0, 1)
+	True
+	>>> _isIllegal(1, 0)
+	True
+	>>> _isIllegal(10, 11)
+	True
+	>>> _isIllegal(11, 10)
+	True
+	"""
+	if pitchClassA > pitchClassB:
+		for interval in ILLEGAL_INTERVALS:
+			if (pitchClassB + interval) % 12 == pitchClassA:
+				return True
+	
+	elif pitchClassB > pitchClassA:
+		for interval in ILLEGAL_INTERVALS:
+			if (pitchClassA + interval) % 12 == pitchClassB:
+				return True
+	
+	return False
 
 class SimpleChord:
 	""" Represents a very simple chord. """
@@ -55,12 +109,18 @@ class SimpleChord:
 	scale = ['C', 'D-', 'D', 'E-', 'E', 'F', 'G-', 'G', 'A-', 'A', 'B-', 'B']
 	
 	def __init__(self, name, quarterLength):
-		""" Creates a chord with a name of the form X or Xm with its quarter length. """
-		self._root = name[0]
+		""" Creates a chord with a name of the form X or Xm with its quarter length. 
+		
+		>>> sc = SimpleChord('C#', 4)
+		>>> sc.name
+		'C#'
+		"""
 		self._quarterLength = quarterLength
-		if len(name) > 1:
+		if name[-1] == 'm':
+			self._root = name[:-1]
 			self._major = False
 		else:
+			self._root = name
 			self._major = True
 	
 	def getSerious(self):
