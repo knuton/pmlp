@@ -75,6 +75,10 @@ n = 6
 global bigCorpus 
 bigCorpus = []
 
+
+### TRAINING ###
+### Commented out to keep program from loading/dumping both ngrams AND CFD.
+### Needs to be uncommented for first run.
 """
 #-----------------------------------------------------------------# 
 # load leading-instrument copus or create it if it isn't there 
@@ -91,20 +95,26 @@ if not leading_ngrams:
 
 	# get all instruments that are used in the songs of Songlist
 	# and parse bigCorpus
+	### all_instruments: Namen der Parts
+	### Hier wird auch schon geparst
 	all_instruments = getParts(Songlist)
 	#print bigCorpus
 	
 	# remove strange ints
+	### Can be integrated into getParts
 	all_instruments = removeInts(all_instruments)
 	
 	# flatten list
+	### Integrate
 	all_instruments = flattenList(all_instruments)
 
 	# determine leading instrument
+	### Just using FreqDist to find leading (most occurences)
 	instrumentFreqDist = frequency.FrequencyDistribution(all_instruments)
 	topInstrument = instrumentFreqDist.top
 
 	# determine which instruments will be used for training
+	### Use N most occuring instruments
 	final_instruments = finalInstruments(all_instruments)
 
 	# remove leading instrument because it gets special treatment
@@ -116,10 +126,11 @@ if not leading_ngrams:
 	#-----------------------------------------------------------------# 
 
 	# create leading_ngrams
+	### Obtained using the name of the top/leading instrument
 	flatLeading = [score.getElementById(str(topInstrument)).flat for score in bigCorpus if score.getElementById(str(topInstrument))]
 	
 	leading_ngrams = []
-	
+	### One trackfrom leading per score
 	for leading in flatLeading: 
 		
 		leadingNotes = leading.notes
@@ -136,7 +147,7 @@ if not leading_ngrams:
 			
 			
 	corpus.persistence.dump('leading', composer, leading_ngrams)
-	
+	### Names of the instruments
 	corpus.persistence.dump('all_instruments', composer, all_instruments)
 	corpus.persistence.dump('topInstrument', composer, topInstrument)
 	corpus.persistence.dump('final_instruments', composer, final_instruments)
@@ -148,6 +159,7 @@ if not leading_ngrams:
 #-----------------------------------------------------------------# 
 # try loading ngramlists of other instruments
 
+### Load/generate list of ngram lists (one per instrument)
 
 other_ngramlists = corpus.persistence.load('others', composer)
 
@@ -177,117 +189,11 @@ print "other_ngramlists"
 
 """
 
-#-----------------------------------------------------------------# 	
-# Methods for measure-generation
 
-# lengthPermitted checks whether a note (its quarterlength) can be added to a measure or not
-# if this is going to be used, having a large alphabet might be necessary so that a note with a permitted length can always be found
+### GENERATION ###
 
-"""
-def lengthPermitted(note, listofnotes):
-	sum = 0
-	for elem in listofnotes:
-		sum = sum + elem.quarterLength	
-	sum = sum + note.quarterLength
-	if sum <= 4: 
-		return True
-	else: 
-		return False
-
-def measurelen(notelist): 
-	sum = 0 
-	for elem in notelist: 
-		sum = sum + elem.quarterLength
-	return sum
-
-# MeasureFull checks whether a measure is full or not
-def MeasureFull(notelist): 
-	sum = 0
-	for elem in notelist: 
-		sum = sum + elem.quarterLength
-	if sum == 4: 
-		return True
-	else: 	
-		return False
-
- 
-def makeLenCompatible(NewNote, listofnotes, history):
-	
-	# contains 1/32
-	#allQuarterLengths = [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0, 1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875, 2.0, 2.125, 2.25, 2.375, 2.5, 2.625, 2.75, 2.875, 3.0, 3.125, 3.25, 3.375, 3.5, 3.625, 3.75, 3.875, 4.0]
-	
-	# List that contains all quarterlengths up from 1/64 to 1
-	allQuarterLengths = [0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625, 0.6875, 0.75, 0.8125, 0.875, 0.9375, 1.0, 1.0625, 1.125, 1.1875, 1.25, 1.3125, 1.375, 1.4375, 1.5, 1.5625, 1.625, 1.6875, 1.75, 1.8125, 1.875, 1.9375, 2.0, 2.0625, 2.125, 2.1875, 2.25, 2.3125, 2.375, 2.4375, 2.5, 2.5625, 2.625, 2.6875, 2.75, 2.8125, 2.875, 2.9375, 3.0, 3.0625, 3.125, 3.1875, 3.25, 3.3125, 3.375, 3.4375, 3.5, 3.5625, 3.625, 3.6875, 3.75, 3.8125, 3.875, 3.9375, 4.0]
-	
-	# contains all Quarterlengths that can be generated 
-	
-	# fastest possible 1/128
-	#possibleQuarterLengths = [0.03125, 0.0625, 0.09375, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 1, 1.5, 2, 3.0, 4]
-	
-	# fastest possible 1/64
-	possibleQuarterLengths = [0.0625, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 1, 1.5, 2, 3.0, 4]
-	
-
-	#
-	sum = 0
-	# collect quarterlengths that occurred in the measure so far 
-	for elem in listofnotes:
-		sum = sum + elem.quarterLength
-	
-	shorthistory = (history[-3], history[-2], history[-1])
-	historyQLs = []
-	for elem in shorthistory: 
-		historyQLs.append(elem.quarterLength)
-	
-	#compatibleQuarterLengths = allQuarterLengths[0:end+1]
-	
-	possibleCompatibleQLs = []
-	for elem in possibleQuarterLengths: 
-		if elem <= 4-sum:
-			possibleCompatibleQLs.append(elem)
-	
-	
-	# check which of the previously occurring QLs are compatible
-	# and add these QLs to allQLs in order to raise their probability
-	for QL in historyQLs: 
-		if QL in possibleCompatibleQLs:
-			# copy next line to make probability for previous QLs larger
-			possibleCompatibleQLs.append(QL) 
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-			possibleCompatibleQLs.append(QL) # remove to make the probability smaller
-
-
-	# choose a compatible QL for the current note
-	# higher probability for compatible QLs that occured before
-	if possibleCompatibleQLs:
-		NewNote.quarterLength = random.choice(possibleCompatibleQLs)
-		print NewNote, NewNote.quarterLength
-		return NewNote	
-	else:
-		return False
-		
-		#NewNote = generator(history, ngramModel)
-		#makeLenCompatible(NewNote, listofnotes, ngramModel, history)
-
-
-def isTriplet(note):
-	
-	triplets = [0.020833333333333332, 0.041666666666666664, 0.083333333333333329, 0.16666666666666666, 0.33333333333333331, 0.66666666666666663, 1.3333333333333333]
-	if note.quarterLength in triplets: 
-		print "found it"
-		print note.quarterLength
-		return True
-	else: 
-		return False
-"""		
-
+### Used to fill up the last measure in generated score with rests,
+### so that all parts have the same length.
 
 def completeMeasure(part, lenCount):
 	rest = music21.note.Rest()
@@ -304,12 +210,10 @@ def completeMeasure(part, lenCount):
 
 # Takes a note and translates it into cdur if it is not in cdur yet
 def makeCdur(note): 
-	#clist = ["C","D","E","F","G","A","B"]
 	# clist contains all pitchClasses that occur in cdur
 	clist = [0,2,4,5,7,9,11]
 	#if note.name not in clist:
-	while note.pitchClass not in clist:  
-		print "jaja"
+	while note.pitchClass not in clist:
 		note = note.transpose(-1)
 	
 	return note
@@ -322,12 +226,6 @@ def areConflicting(Note1, Note2):
 	
 	# every note which is 1/2 step above or below produces conflict
 	conflictlist = [1,11,13,23,25,35,37,47,49,59,61,71,73,83,85,95,97]
-	
-	# helmholzlist follows another theory. Might result in infinite loop when trying to find a compatible note for many parts. Better don't use it
-	
-	#conflictlist = [1,2,10,11,13,14,22,23,25,26,34,35,37,38,46,47,49,50,58,59,61,62,70,71]
-
-	#if isinstance(Note1, music21.note.Note):
 	
 	if Note1.isNote and Note2.isNote:
 		print "changing interval"
@@ -345,8 +243,11 @@ def areConflicting(Note1, Note2):
 #-----------------------------------------------------------------# 	
 # creativity: 
 
+### Load CFD (leading)
 
 leading_ngramCFD = corpus.persistence.load('leading_ngramCFD', composer)
+
+### Or create CFD (leading)
 
 if not leading_ngramCFD: 
 	# create ngramDistribution for leading corpus
@@ -357,9 +258,13 @@ if not leading_ngramCFD:
 
 # create ngramDistributions for other copora
 
+### Load CFD (others)
 
 # try to load otherNgramCFDs or create if it can't be loaded
 otherNgramCFDs = corpus.persistence.load('otherNgramCFDs', composer)
+
+
+### Or create CFD (others)
 
 if not otherNgramCFDs: 
 
@@ -376,47 +281,41 @@ if not otherNgramCFDs:
 # so far it is only for leading corpus (we should add other corpora/notes from other corpora too e.g. by creating an alphabet from all corpora and eliminating copies)
 alphabet = leading_ngramCFD.sampleSpace
 
+
+### Might want to use separate alphabet for others
+
 # generate a new note (if possible based on its probability given a certain history)
+
+### Pass along CFD (there are several), pass along alphabet (see above)
 
 def generator(realHistory, ngramCFD):
 	
 	normalizedHistory = music42.normalizeNotes(realHistory)
 	
+	### Might want to use expected/expectedFuzz
 	if ngramCFD[normalizedHistory].top:
 		return music42.denormalizeNote(ngramCFD[normalizedHistory].fuzztop, realHistory)
 	
 	# if nothing is found take a random note
 	logger.log("Failed to find random choice for history %s" % (normalizedHistory,))
 	return random.choice(alphabet)
-	
-
-"""
-def generator(realHistory):
-	
-	normalizedHistory = music42.normalizeNotes(realHistory)
-	
-	if ngramCFD.expected(normalizedHistory):
-		return music42.denormalizeNote(ngramCFD.expectedFuzz(normalizedHistory), realHistory)
-	
-	# if nothing is found take a random note
-	logger.log("Failed to find random choice for history %s" % (normalizedHistory,))
-	return random.choice(alphabet)
-"""
-
-#corpus.persistence.dump('topInstrument', composer, topInstrument)
-#corpus.persistence.dump('final_instruments', composer, final_instruments)
 
 topInstrument = corpus.persistence.load('topInstrument', composer)
 final_instruments = corpus.persistence.load('final_instruments', composer)
 
+
+### Might want to pass alphabet(s)
 
 def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMeasures, filename): 
 
 	# create a score
 	s = music21.stream.Score()
 
+	### Maybe choose n per instrument
+
 	n = len(startsequence)
 	
+	### Leading
 	Lhistory = startsequence
 	Lpart = music21.stream.Part()
 	
@@ -424,10 +323,13 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 	# alternativ: note in tonart generieren 
 	choicelist = [-1, 1]
 	opartchecklist = []
+	### List of other parts
 	opartList = []
 	
-	mCount = 0 
-	lenCount = 0 
+	mCount = 0 # measure count
+	lenCount = 0 # quarter length count
+	
+	### Only insert start sequence into leading part
 	
 	while lenCount < 4:
 		for elem in startsequence: 
@@ -436,7 +338,9 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 	lenCount -= 4 
 	mCount += 1
 	
+	### Less than parameter value
 	while mCount < numOfMeasures - 1: 
+		### lenCount might be prefilled, but works measure-wise
 		while lenCount < 4:
 			nextNote = generator(Lhistory, leadingModel)
 			
@@ -450,17 +354,17 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 			print "added note" + str(nextNote)
 			Lhistory = Lhistory[1:] + (nextNote,)
 			
-		print lenCount
 		# raise measure count
 		mCount += 1
 		# reset the length count
 		lenCount -= 4 
-		print lenCount
-		print "mCount" + str(mCount)
-		
+	
+	### Fill last "measure" with rests
 	Lpart = completeMeasure(Lpart, lenCount)
+	### Try to reassign instrument type
 	Lpart.id = topInstrument
 	
+	### Add leading part to score
 	s.insert(0, Lpart)
 	
 	# create startsequences for other parts
@@ -476,22 +380,31 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 		lenCount -= 4
 		mCount += 1
 			
-		ohistory = otherStart	
+		ohistory = otherStart
+		### opart: Track for one instrument
+		### mCount: Pass on to generation of remaining
+		### lenCount: Pass on to generation of remaining
+		### ohistory: History of instrument
 		opartList.append([opart, mCount, lenCount, ohistory])
 		
 		
 	i = 0 
+	### i runs trough number of instruments
+	### Could be turned into
+	### for opart, mCount, lenCount, ohistory in opartList:
 	while i < len(opartList):
-	#for i in range(opartList):
+		### Current instrument
 		list = opartList[i]
-		omodel = otherModels[i]	
+		omodel = otherModels[i] ### Can get alphabet from this
+		### Track
 		opart = list[0]
 		mCount = list[1]
 		lenCount = list[2]
 		ohistory = list[3]
 		
-		
-		while mCount < numOfMeasures - 1: 
+		### Run through measures
+		while mCount < numOfMeasures - 1:
+			### Create measurewise
 			while lenCount < 4:
 				nextNote = generator(ohistory, omodel)
 				
@@ -502,15 +415,21 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 				
 				# add note to part
 				opart.append(nextNote)
+				
+				### Either this or makeCdur
+				
 				"""
 				# take new elem from the part (same as nextNote but contains offset information)
+				### Now has an offset
 				lastelem = opart[-1]
 				
 				
 				# create list to fill with notes that have the same offset as lastelem
+				### From all previously generated parts
 				sameoffset = []
 				
 				# take a random choice for changing the pitch (choicelist see above)
+				### choicelist = [1, -1]
 				choice = random.choice(choicelist)
 				
 				# search for notes with same offset as lastelem and append them to sameoffset 
@@ -519,43 +438,29 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 				for elem in Lpart:
 					if elem.isNote and lastelem.isNote:
 						if lastelem.offset in range(elem.offset, (elem.offset + elem.quarterLength)) or elem.offset in range(lastelem.offset, (lastelem.offset + lastelem.quarterLength)):
-						
-						#if elem.offset == lastelem.offset:
-					
 							lSameOffset = elem
+							### No regard for chords up til now
 							if elem.isNote:
-						#if isinstance(elem, music21.note.Note):  
 								sameoffset.append(elem)
-						
-						#while areConflicting(elem, lastelem):
-						#	#lastelem = generator(ohistory, omodel)
-						#	print "conflicting elem" + str(lastelem)
-						#	print "they are conflicting"
-						#	lastelem = lastelem.transpose(-1)
-						
-				# areConflicting so umschreiben, dass es alle gleichzeitig ueberprueft falls es eine liste bekommt, so dass das neue element mit allen anderen gleichzeitig kompatibel ist 
 				
 				# 2. sameoffset in previous parts
 				if opartchecklist: 
 					for previousPart in opartchecklist: 
 						for oelem in previousPart:
 							if oelem.isNote and lastelem.isNote:
-							
 								if lastelem.offset in range(oelem.offset, (oelem.offset + oelem.quarterLength)) or oelem.offset in range(lastelem.offset, (lastelem.offset + lastelem.quarterLength)):
-							
-								#if oelem.offset == lastelem.offset:
 									if oelem.isNote:
 										sameoffset.append(oelem)
 										print "append note to opartchecklist"
 				
-				print "length sameoffset"
-				print len(sameoffset)
-				if sameoffset: 
+				print "length sameoffset", len(sameoffset)
+				if sameoffset:
 					
-					#while areConflicting(sameoffset, lastelem):
-					#	choice = random.choice(choicelist)
-					#	lastelem = lastelem.transpose(choice)
+					### Adjustment is alwas for lastelem (the new note)
 					
+					### As long as there is a conflict between lastelem and any elem from sameoffset
+					### randomly go always up or always down with lastelem's pitch, until there is
+					### no more conflict.
 					
 					if len(sameoffset) == 1:
 						while areConflicting(sameoffset[0], lastelem):
@@ -597,48 +502,38 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 							#choice = random.choice(choicelist)
 							lastelem = lastelem.transpose(choice)
 					
-					#while areConflicting(elem, lastelem):
-						
-					#	print "conflicting elem" + str(lastelem)
-					#	print "they are conflicting"
-						
-					#	choice = random.choise(choicelist)
-					#	lastelem = lastelem.transpose(choice)
-						
-				
+				### lastelem needs to be put back over its old version in the part
 				opart[-1] = lastelem
 				
 				"""
-				#print "new elem: " + str(opart[-1])
-				
+				### For conflict solution
 				#lenCount += lastelem.quarterLength
-			
+				### For makeCdur
 				lenCount += nextNote.quarterLength
-				#created.append(nextNote)
 				
-				
+				### Update history (makeCdur)
 				ohistory = ohistory[1:] + (nextNote,)
-				#print "added note" + str(lastelem)
+				### Update history (conflict solution)
 				#ohistory = ohistory[1:] + (lastelem,)
-			
-			print lenCount
 		
+			### End of while (lenCount < 4)
 			# raise measure count
 			mCount += 1
 			# reset the length count
 			lenCount -= 4 
-			print lenCount
-			print "mCount" + str(mCount)
 		
-		
+		### Fill part with rests
 		opart = completeMeasure(opart, lenCount)
+		### Add new part to list of parts which could contain conflicting notes
 		opartchecklist.append(opart)
-		s.show()
+		
 		s.insert(opart)
+		### Just for debugging, because each turn could end in a crash
+		s.show()
 		i = i + 1
 		print "instrument complete"
 		
-	# label score
+	# label score (experimental)
 	s.id = str(filename)
 	
 	# show score
@@ -647,99 +542,8 @@ def randomConcert(leadingModel, otherModels, startsequence, otherStarts, numOfMe
 	# store new song in musicXML file
 	s.write('musicxml', 'output/'+ str(filename) + '.xml')
 
+### End of randomConcert
 
-# randomSong creates a new song (or rather a new Part)
-def randomSong(ngramModel, startsequence, numOfMeasures, filename):
-	
-	
-	
-	# n is the order of the ngram (e.g. 3)
-	# right now it is determined by the length of the startsequence
-	n = len(startsequence)
-	#n = 3
-	#history = startsequence[len(startsequence)-n:len(startsequence)] 
-	history = startsequence
-	print "First History"
-	print history
-	
-	part = music21.stream.Part()
-	#created = []
-	
-	# measure count
-	mCount = 0
-	# measurelength sum
-	lenCount = 0
-	
-	# insert startsequence into the part
-	for elem in startsequence: 
-		while lenCount < 4: 
-			part.append(elem)
-			lenCount += elem.quarterLength
-		lenCount -= 4 
-		mCount += 1
-		
-		
-	# create rest of the song
-	#while len(part.getElementsByClass(music21.stream.Measure)) < numOfMeasures:
-	while mCount < numOfMeasures - 1: 
-		while lenCount < 4:
-			nextNote = generator(history, ngramModel)
-			part.append(nextNote)
-			lenCount += nextNote.quarterLength
-			
-			#created.append(nextNote)
-			print "added note" + str(nextNote)
-			history = history[1:] + (nextNote,)
-			
-		print lenCount
-		
-		# raise measure count
-		mCount += 1
-		# reset the length count
-		lenCount -= 4 
-		print lenCount
-		print "mCount" + str(mCount)
-		
-	
-	# fill up last measure with rests
-	part = completeMeasure(part, lenCount)
-	
-       
-
-	# create a music21 part
-	
-	
-#	detaerc = []
-#	for elem in created: 
-#		detaerc.insert(0, elem)
-	
-#	part2 = music21.stream.Part()
-#	for elem in detaerc: 
-#		part2.append(elem)
-	
-	# create a score
-	s = music21.stream.Score()
-	
-	# insert part into score
-	s.insert(part)
-	#s.insert(0, part)
-	part.id = topInstrument
-	part.id = u'ALto'
-	part.partID = "testpart"
-	s.id = str(filename)
-	s.show()
-	#b = s[0].getMeasureRange(1,5)
-	#b.show()
-
-	
-	# show score
-	#part.show()
-	
-	# store new song in musicXML file
-	#part.write('musicxml', 'output/'+ str(filename) + '.xml')
-	s.write('musicxml', 'output/'+ str(filename) + '.xml')
-				
-	
 # so far start only consists of 2 arbitrary notes
 # could be something more sophisticated like a real intro 
 start = random.choice(leading_ngramCFD.conditions)
@@ -750,7 +554,6 @@ songname = str(composer) + "_" + str(raw_input("Enter a name for the new song: "
 
 # create a new song 
 print "here comes the music"
-#randomSong(leading_ngramCFD, start, 20, songname)
 
 otherStarts = []
 for cfd in otherNgramCFDs: 
@@ -759,6 +562,7 @@ for cfd in otherNgramCFDs:
 
 
 # create a new concert
+### Leading CFD, other CFDs (list), startseq of leading, startseq of others (list), 10 measures, song name
 randomConcert(leading_ngramCFD, otherNgramCFDs, start, otherStarts, 10, songname)
 
 
