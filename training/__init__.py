@@ -15,6 +15,7 @@ from statistics import ngram
 from statistics import frequency
 from tools import logger, music42
 from common.exceptions import StateError
+from music import chordial
 
 class Trainer:
 	""" Oversees the training on a collection of MusicXML files. """
@@ -29,9 +30,10 @@ class Trainer:
 		
 		# Order matters
 		self._analysums = [
-			'instruments', 'melody', 'bandSize'
+			'instruments', 'melody', 'structure', 'bandSize'
 		]
 		
+		self._structure = collections.defaultdict(frequency.ConditionalFrequencyDistribution)
 		self._melody = collections.defaultdict(frequency.ConditionalFrequencyDistribution)
 		self._instruments = frequency.FrequencyDistribution()
 		self._bandSize = 0
@@ -139,6 +141,33 @@ class Trainer:
 		
 		logger.status("Conditional frequency distribution for %s has %i conditions." % (partName, len(self._melody[partName])))
 	
+	def _structureAnalysis(self, m21score):
+		""" Analyses the chord structure of a score. """
+		logger.status("Creating structure ngrams for a score.")
+		
+		if not m21score[0]:
+			return
+		
+		for part in m21score:
+			self._partStructureAnalysis(part)
+	
+	def _partStructureAnalysis(self, m21part):
+		""" Analyses the chord structure for one stream of notes. """
+		n = 3
+		
+		if isinstance(m21part.id, int):
+			return
+		
+		partName = str(m21part.id)
+		
+		chordProg = chordial.ChordProgression(m21part)
+		
+		for i in range(0, len(chordProg) - n):
+			chordNGram = ngram.ChordNGram(chordProg[i:i+n])
+			self._structure[partName].seenOnCondition(chordNGram.condition, chordNGram.sample)
+		
+		logger.status("Conditional frequency distribution for %s has %i conditions." % (partName, len(self._melody[partName])))
+	
 	def _loadFromCorpus(self, dataType):
 		return corpus.persistence.load(dataType, self._collectionName, self._corpusName)
 	
@@ -153,7 +182,8 @@ class Trainer:
 		return {
 			'melody' : self._melody,
 			'bandSize' : self._bandSize,
-			'instruments' : self._instruments
+			'instruments' : self._instruments,
+			'structure' : self._structure
 		}
 	
 	results = property(_getResults,
