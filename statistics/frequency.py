@@ -120,6 +120,23 @@ class FrequencyDistribution:
 	'a'
 	""")
 	
+	def topN(self, n):
+		""" Returns the top N samples by occurence.
+		
+		>>> newFreak = FrequencyDistribution()
+		>>> newFreak.topN(5)
+		[]
+		>>> newFreak.seen('a')
+		>>> newFreak.topN(5)
+		['a']
+		>>> newFreak.seen('b')
+		>>> newFreak.topN(1)
+		['a']
+		"""
+		if len(self._sampleHeap) == 0:
+			return []
+		return self._sampleHeap[0:n]
+	
 	def getByPercentage(self, percentage):
 		""" Get all samples that appear at least as often as the given percentage.
 		
