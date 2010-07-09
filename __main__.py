@@ -106,8 +106,11 @@ def generate(collection, corpus, xmls):
 	again = 'a'
 	while again == 'a':
 		song = generator.generate()
-	
-		song.write('musicxml', '%s_%s_%s.xml' % (collection, corpus, datetime.datetime.now().isoformat()))
+		
+		try:
+			song.write('musicxml', '%s_%s_%s.xml' % (collection, corpus, datetime.datetime.now().isoformat()))
+		except Exception:
+			continue
 		try:
 			song.show()
 		except music21.environment.EnvironmentException:

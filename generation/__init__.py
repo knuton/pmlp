@@ -5,6 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # --- End of parent loading
 
 import music21.stream
+import music21.note
 
 import random
 
@@ -103,6 +104,9 @@ class Generator:
 			logger.status("Generating part for %s." % instrument)
 			# TODO determine measureNum and measureLen through analysis
 			s.insert(0, self._generatePart(instrument, measureNum, measureLen))
+		
+		self._smoothEnd(s)
+		
 		return s
 	
 	def _completeMeasure(self, part, currQuarterLength, measureLength = 4):
@@ -134,3 +138,17 @@ class Generator:
 		
 		logger.log("Failed to find prediction for history %s" % str(history))
 		return random.choice(self._structure[self._instruments.top].sampleSpace)
+	
+	def _smoothEnd(self, stream):
+		longestPart = None
+		maxDur = -1
+		for part in stream:
+			if part.duration.quarterLength > maxDur:
+				longestPart = part
+				maxDur = part.duration.quarterLength
+		
+		if self._activeStructure and longestPart:
+			lastChord = self._activeStructure[-1].getSerious()
+			longestPart.append(music21.note.Note(lastChord.root().pitchClass))
+			lastChord.quarterLength = 4
+			longestPart.append(lastChord)
