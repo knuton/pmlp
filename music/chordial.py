@@ -10,7 +10,7 @@ import music21.chord
 import music21.interval
 import pdb
 
-ILLEGAL_INTERVALS = [1]
+ILLEGAL_INTERVALS = [1, 2, 11]
 
 def fromNotes(stream):
 	""" Creates a chord progression guessed from a sequence of notes.
@@ -145,6 +145,9 @@ def _isIllegal(pitchClassA, pitchClassB):
 class SimpleChord:
 	""" Represents a very simple chord. """
 	
+	pitchClasses = {
+		'C' : 0, 'D' : 2, 'E' : 4, 'F' : 5, 'G' : 7, 'A' : 9, 'B' : 11
+	}
 	scale = ['C', 'D-', 'D', 'E-', 'E', 'F', 'G-', 'G', 'A-', 'A', 'B-', 'B']
 	
 	def __init__(self, name, quarterLength):
@@ -161,6 +164,25 @@ class SimpleChord:
 		else:
 			self._root = name
 			self._major = True
+	
+	def isCompatible(self, note):
+		""" Checks whether a certain note is compatible with this chord. """
+		pC = self._pitchClass()
+		for interval in self._major and music42.cMajScale or music42.cMinScale:
+			if (pC + interval) % 12 == note.pitchClass:
+				return True
+		return False
+	
+	def _pitchClass(self):
+		""" Returns a number, the pitch class. """
+		pC = self.__class__.pitchClasses[self.name[0]]
+		if self.name[-1] == '#':
+			pC += 1
+		elif self.name[-1] == '-':
+			pC -= 1
+			if pC == -1:
+				return 11
+		return pC
 	
 	def getSerious(self):
 		""" Returns a music21 chord. 
@@ -219,7 +241,7 @@ class SimpleChord:
 		return hash(self.name + str(self.quarterLength))
 	
 	def __str__(self):
-		return '[%s, %f]' % (self.names, self._quarterLength)
+		return '[%s, %f]' % (self.name, self._quarterLength)
 
 class ChordProgression:
 	""" Holds a chord progression with chords and their offsets. """

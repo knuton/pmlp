@@ -12,6 +12,7 @@ from statistics import ngram
 from statistics import frequency
 from tools import logger, music42
 from common.exceptions import StateError
+from music import chordial
 
 class Generator:
 	""" Generates a new song from conditional frequency distributions. """
@@ -23,6 +24,7 @@ class Generator:
 		self._instruments = resultSet['instruments']
 		self._bandSize = resultSet['bandSize']
 		self._activeInstruments = self._instruments.topN(self._bandSize)
+		self._activeStructure = None
 		self._alphabets = {}
 		for instrument in self._activeInstruments:
 			self._alphabets[instrument] = self._melody[instrument].sampleSpace
@@ -35,7 +37,10 @@ class Generator:
 		history = random.choice(self._melody[partName].conditions)
 		logger.status("Starting from " + str(history))
 		
-		score = list(history)
+		score = []
+		for note in history:
+			score.append(self._fixNote(note, currOffset))
+			currOffset += note.quarterLength
 		
 		while currOffset < measureNum * measureLen: 
 			nextNote = self._predictNote(history, partName)
@@ -52,18 +57,52 @@ class Generator:
 		
 		return part
 	
+	def _generateStructure(self, measureNum, measureLen):
+		""" Generates a chord structure for the score. """
+		currOffset = 0.0
+		
+		history = random.choice(self._structure[self._instruments.top].conditions)
+		logger.status("Starting from " + str(history))
+		
+		chordProg = chordial.ChordProgression()
+		for chord in history:
+			chordProg.addChordAt(chord.name, currOffset)
+			currOffset += chord.quarterLength
+		
+		while currOffset < measureNum * measureLen:
+			nextChord = self._predictChord(history)
+			
+			chordProg.addChordAt(nextChord.name, currOffset)
+			currOffset += nextChord.quarterLength
+			
+			history = history[1:] + (nextChord,)
+			logger.status("Current history is %s" % str(history))
+		
+		self._activeStructure = chordProg
+	
 	def _fixNote(self, note, offset):
 		""" Fixes a note. """
-		if not self._structure:
+		if not self._activeStructure:
 			return music42.makeCmaj(note)
+		
+		while not self._activeStructure.chordAt(offset).isCompatible(note):
+			note.transpose(-1)
+		return note
 	
 	def generate(self):
 		""" Generate a whole new score. """
+		measureNum = 15
+		measureLen = 4
+		
 		s = music21.stream.Score()
+		
+		logger.status("Generating structure for score.")
+		self._generateStructure(measureNum, measureLen)
+		
 		for instrument in self._activeInstruments:
 			logger.status("Generating part for %s." % instrument)
 			# TODO determine measureNum and measureLen through analysis
-			s.insert(0, self._generatePart(instrument, 15, 4))
+			s.insert(0, self._generatePart(instrument, measureNum, measureLen))
 		return s
 	
 	def _completeMeasure(self, part, currQuarterLength, measureLength = 4):
@@ -85,6 +124,13 @@ class Generator:
 		if self._melody[partName].expected(normalizedHistory):
 			return music42.denormalizeNote(self._melody[partName].expectedFuzz(normalizedHistory), realHistory)
 		
-		# if nothing is found take a random note
 		logger.log("Failed to find prediction for history %s" % (normalizedHistory,))
 		return random.choice(self._alphabets[partName])
+	
+	def _predictChord(self, history):
+		""" Predicts the next chord from a history. """
+		if self._structure[self._instruments.top].expected(history):
+			return self._structure[self._instruments.top].expectedFuzz(history)
+		
+		logger.log("Failed to find prediction for history %s" % str(history))
+		return random.choice(self._structure[self._instruments.top].sampleSpace)
