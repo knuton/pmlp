@@ -18,6 +18,7 @@ class Generator:
 	
 	def __init__(self, resultSet):
 		""" Fills the generator with the available data. """
+		self._structure = 'structure' in resultSet and resultSet['structure'] or None
 		self._melody = resultSet['melody']
 		self._instruments = resultSet['instruments']
 		self._bandSize = resultSet['bandSize']
@@ -28,22 +29,19 @@ class Generator:
 	
 	def _generatePart(self, partName, measureNum, measureLen):
 		""" Generates a part from its available data on call. """
+		currOffset = 0.0
 		
-		# Choose a random history as starting point
+		# random starting point
 		history = random.choice(self._melody[partName].conditions)
-		
 		logger.status("Starting from " + str(history))
 		
 		score = list(history)
 		
-		# fill the score with new notes
 		for i in range(measureNum): 
-			
-			# selects random note c with Pr(c|history)
 			nextNote = self._predictNote(history, partName)
 			
-			# add new note to list of generated notes
-			score.append(nextNote)
+			score.append(self._fixNote(nextNote, currOffset))
+			currOffset += nextNote.quarterLength
 			
 			history = history[1:] + (nextNote,)
 			logger.status("Current history is " + str(history))
@@ -54,7 +52,13 @@ class Generator:
 		
 		return part
 	
+	def _fixNote(self, note, offset):
+		""" Fixes a note. """
+		if not self._structure:
+			return music42.makeCmaj(note)
+	
 	def generate(self):
+		""" Generate a whole new score. """
 		s = music21.stream.Score()
 		for instrument in self._activeInstruments:
 			logger.status("Generating part for %s." % instrument)
@@ -68,7 +72,7 @@ class Generator:
 		if currQuarterLength < measureLength:
 			rest.quarterLength = measureLength - currQuarterLength
 			part.append(rest)
-			return part # TODO is this necessary? (used)
+			return part # TODO is this necessary? (used?)
 		elif currQuarterLength == measureLength:
 			rest.quarterLength = measureLength
 			part.append(rest)
