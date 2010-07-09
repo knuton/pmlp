@@ -1,6 +1,7 @@
 import music21
 import logger
 
+cMajScale = [0,2,4,5,7,9,11]
 cFour = music21.note.Note()
 
 def normalizeNotes(noteSequence = []):
@@ -30,7 +31,8 @@ def denormalizeNote(note, unnormalHistory):
 
 def makeCmaj(note):
 	""" Takes a note and 'corrects' it to C major scale. """
-	cMajScale = [0,2,4,5,7,9,11]
+	if not note.isNote:
+		return note
 	while note.pitchClass not in cMajScale:
 		note = note.transpose(-1)
 	return note
