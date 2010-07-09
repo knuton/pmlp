@@ -86,8 +86,8 @@ class Generator:
 			return music42.makeCmaj(note)
 		
 		while not self._activeStructure.chordAt(offset).isCompatible(note):
-			note.transpose(-1)
-		return note
+			logger.status("Transposing %s." % str(note))
+			return note.transpose(-1)
 	
 	def generate(self):
 		""" Generate a whole new score. """

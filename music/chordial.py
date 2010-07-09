@@ -166,7 +166,18 @@ class SimpleChord:
 			self._major = True
 	
 	def isCompatible(self, note):
-		""" Checks whether a certain note is compatible with this chord. """
+		""" Checks whether a certain note is compatible with this chord.
+		
+		>>> import music21.note
+		>>> SimpleChord('C#', 4).isCompatible(music21.note.Note('C'))
+		False
+		>>> SimpleChord('A', 4).isCompatible(music21.note.Note('D#'))
+		False
+		>>> SimpleChord('C', 4).isCompatible(music21.note.Note('D'))
+		True
+		"""
+		if not note.isNote:
+			return True
 		pC = self._pitchClass()
 		for interval in self._major and music42.cMajScale or music42.cMinScale:
 			if (pC + interval) % 12 == note.pitchClass:
@@ -174,7 +185,19 @@ class SimpleChord:
 		return False
 	
 	def _pitchClass(self):
-		""" Returns a number, the pitch class. """
+		""" Returns a number, the pitch class of the root. 
+		
+		>>> SimpleChord('C#', 4)._pitchClass()
+		1
+		>>> SimpleChord('D-', 4)._pitchClass()
+		1
+		>>> SimpleChord('B', 4)._pitchClass()
+		11
+		>>> SimpleChord('C-', 4)._pitchClass()
+		11
+		>>> SimpleChord('G', 4)._pitchClass()
+		7
+		"""
 		pC = self.__class__.pitchClasses[self.name[0]]
 		if self.name[-1] == '#':
 			pC += 1

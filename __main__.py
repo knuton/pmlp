@@ -31,7 +31,7 @@ def menu():
 		try:
 			choice = str(raw_input("  Make your choice by entering one of l, g, h and q > "))
 		except ValueError:
-			print "  Please enter an item's number."
+			print "  Illegal string"
 	
 	if choice == 'q':
 		exit(0)
