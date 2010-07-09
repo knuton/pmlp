@@ -37,7 +37,7 @@ class Generator:
 		
 		score = list(history)
 		
-		for i in range(measureNum): 
+		while currOffset < measureNum * measureLen: 
 			nextNote = self._predictNote(history, partName)
 			
 			score.append(self._fixNote(nextNote, currOffset))
@@ -63,7 +63,7 @@ class Generator:
 		for instrument in self._activeInstruments:
 			logger.status("Generating part for %s." % instrument)
 			# TODO determine measureNum and measureLen through analysis
-			s.insert(0, self._generatePart(instrument, 60, 4))
+			s.insert(0, self._generatePart(instrument, 15, 4))
 		return s
 	
 	def _completeMeasure(self, part, currQuarterLength, measureLength = 4):
