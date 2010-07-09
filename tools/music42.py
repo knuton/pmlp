@@ -4,6 +4,7 @@ import logger
 cFour = music21.note.Note()
 
 def normalizeNotes(noteSequence = []):
+	""" Normalizes a sequence of notes to one with same intervals, but starting on C4. """
 	# We need to use an actual note with pitch to determine the distance to C4,
 	# not a rest or other note-like object.
 	firstNote = firstActualNote(noteSequence)
@@ -14,6 +15,7 @@ def normalizeNotes(noteSequence = []):
 	return tuple([makeNote(note) for note in noteSequence])
 
 def firstActualNote(noteSequence):
+	""" Returns the first actual note in the sequence or None, if none is found. """
 	firstNote = next((note for note in noteSequence if note.isNote), None)
 	return firstNote and makeNote(firstNote) or None
 
@@ -26,7 +28,15 @@ def denormalizeNote(note, unnormalHistory):
 	else:
 		return note
 
+def makeCmaj(note):
+	""" Takes a note and 'corrects' it to C major scale. """
+	cMajScale = [0,2,4,5,7,9,11]
+	while note.pitchClass not in cMajScale:
+		note = note.transpose(-1)
+	return note
+
 def makeNote(noteObj):
+	""" Makes a standardized note from some note object. """
 	if noteObj.isNote:
 		note = music21.note.Note(type = noteObj.duration.quarterLength)
 		note.pitch.midi = noteObj.pitch.midi
