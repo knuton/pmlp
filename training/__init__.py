@@ -160,7 +160,7 @@ class Trainer:
 		
 		partName = str(m21part.id)
 		
-		chordProg = chordial.ChordProgression(m21part)
+		chordProg = chordial.fromNotes(m21part)
 		
 		for i in range(0, len(chordProg) - n):
 			chordNGram = ngram.ChordNGram(chordProg[i:i+n])

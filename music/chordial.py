@@ -60,11 +60,13 @@ def fromNotes(stream):
 				beatPos += quarterLenBeats
 				break
 			if quarterLenBeats == 1:
-				guessedChord = _findChord(
-					[music42.firstActualNote(noteStream.getElementsByOffset(beatPos, beatPos + quarterLenBeats, False))]
-				)
-				if guessedChord:
-					cp.addChordAt(guessedChord, beatPos)
+				firstNote = music42.firstActualNote(noteStream.getElementsByOffset(beatPos, beatPos + quarterLenBeats, False))
+				if firstNote:
+					guessedChord = _findChord(
+						[firstNote]
+					)
+					if guessedChord:
+						cp.addChordAt(guessedChord, beatPos)
 				beatPos += 1
 				break
 			quarterLenBeats /= 2
@@ -208,6 +210,14 @@ class SimpleChord:
 	def _circularIndex(self, index):
 		return self.__class__.scale[index % len(self.__class__.scale)]
 	
+	def __eq__(self, other):
+		""" Checks equality by pitch, major/minor and quarter length. """
+		return self.name == other.name and self.quarterLength == other.quarterLength
+	
+	def __hash__(self):
+		""" Returns a hash value for the chord. """
+		return hash(self.name + str(self.quarterLength))
+	
 	def __str__(self):
 		return '[%s, %f]' % (self.names, self._quarterLength)
 
@@ -283,18 +293,34 @@ class ChordProgression:
 		
 		return self._onsetList[current]
 	
+	def _binaryFindIndex(self, quarterTime):
+		""" Return the index of the last onset prior to the provided quarter time. """
+		return self._binaryFind(quarterTime, True)
+	
+	def __getitem__(self, key):
+		""" Return the chords specified by the int/slice. """
+		if isinstance(key, int):
+			return self.chordAt(self._onsetList[key])
+		if isinstance(key, slice):
+			return [self.chordAt(i) for i in self._onsetList[key]]
+	
 	def __iter__(self):
 		""" Returns an iterator for a chord progression. 
-		
+
 		>>> cp = ChordProgression([('G', 0), ('C', 4)])
 		>>> [c.name for c in cp]
 		['G', 'C']
 		"""
 		return iter([self.chordAt(onset) for onset in self._onsetList])
 	
-	def _binaryFindIndex(self, quarterTime):
-		""" Return the index of the last onset prior to the provided quarter time. """
-		return self._binaryFind(quarterTime, True)
+	def __len__(self):
+		""" Returns the length of a chord progression, i.e. the number of onsets.
+		
+		>>> cp = ChordProgression([('G', 0), ('C', 4)])
+		>>> len(cp)
+		2
+		"""
+		return len(self._onsetList)
 	
 	def __str__(self):
 		""" Returns a string representation of the chord progression.
