@@ -8,13 +8,14 @@ import music21.stream
 import music21.note
 
 import random
+import difflib
 
 from statistics import ngram
 from statistics import frequency
 from tools import logger, music42
 from common.exceptions import StateError
 from music import chordial
-from tools.mididicts import midiAlphabet, instrumentGroups
+from tools.mididicts import midiAlphabet, midiNameAlphabet, instrumentGroups
 
 
 class Generator:
@@ -47,9 +48,6 @@ class Generator:
 		self._activeStructure = None
 		self._alphabets = {}
 		for instrument in self._activeInstruments:
-			#print "instrument"
-			#print instrument 
-			#print self._melody[instrument].conditions
 			self._alphabets[instrument] = self._melody[instrument].sampleSpace
 	
 	def _generatePart(self, partName, measureNum, measureLen):
@@ -81,12 +79,28 @@ class Generator:
 		if self._useWinner == "midiUse": 
 			partInstr.midiProgram = int(partName) # This makes the parts sound different!
 			partInstr.partName = str(midiAlphabet[partInstr.midiProgram])
-		elif self._useWinner == "idUse":
-			#partInstr.midiProgram = ...Use clever regular expressions in combination with midiAlphabet and instrumentGroups to determine the midiProgram..
-			partInstr.partName = str(partName)
+		elif self._useWinner == "idUse":	
+			# try to find a suitable midiProgram by comparing the name of the part with 128 different instrument names
+			compare = " " + str(partName) + " "
+			simInstruments = difflib.get_close_matches(compare, midiNameAlphabet.keys())
+			
+			# if successful: use the corresponding midiProgram
+			if len(simInstruments) > 0: 
+				simInstrument = simInstruments[0]
+				partInstr.midiProgram = int(midiNameAlphabet[simInstrument])
+				partInstr.partName = str(midiAlphabet[partInstr.midiProgram])		
+			else: 
+				partInstr.partName = str(partName)
 			
 		partInstr.partIdRandomize()
 		part.insert(0, partInstr)
+		
+		
+		
+		# Insert instrument specific generation procedures here
+		# using instrumentGroups might be helpful
+		
+		
 		
 		for note in score:
 			part.append(note)

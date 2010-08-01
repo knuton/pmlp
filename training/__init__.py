@@ -141,7 +141,7 @@ class Trainer:
 	def _instrumentChoice(self): 
 		""" Ask user which instruments he/she wants to have in the new song """
 		if self._idUse: 
-			partPrograms = self._midiProgs.samples()
+			partPrograms = self._instruments.samples()
 			partAlphabet = []
 			choiceProgs = []
 			i = 1
@@ -151,6 +151,8 @@ class Trainer:
 					choiceProgs.append(str(i))
 					i = i + 1
 			choiceAlphabet = dict(partAlphabet)
+			print "choiceAlphabet"
+			print choiceAlphabet
 			
 		elif self._midiUse:
 			choiceAlphabet = midiAlphabet
@@ -162,8 +164,8 @@ class Trainer:
 		
 		print "\n You can choose between the following instruments: \n"
 		for elem in sorted(choiceProgs): 
-			if int(elem) in range(1, len(choiceAlphabet)): 
-				print " " + str(int(elem)) + "\t" + str(choiceAlphabet[int(elem)]) 
+			#if int(elem) in range(1, len(choiceAlphabet)): 
+			print " " + str(int(elem)) + "\t" + str(choiceAlphabet[int(elem)]) 
 		
 		print "\n Enter the corresponding number to choose an instrument you want to use \n"
 		print " Enter 'n' when you are finished choosing instruments. "
@@ -181,7 +183,10 @@ class Trainer:
 				
 		if self._instrChoice: 
 			while iChoice != "n": 
-				self._instrChoices.append(iChoice)
+				if self._idUse:
+					self._instrChoices.append(choiceAlphabet[int(iChoice)])
+				elif self._midiUse:
+					self._instrChoices.append(iChoice)
 				iChoice = raw_input(" Anything else?: ")
 				if iChoice == "n":
 					break
@@ -189,10 +194,16 @@ class Trainer:
 					iChoice = raw_input(" Please make a valid choice: ")
 					if iChoice == "n": 
 						break
-				
+			
 			print "\n The following instruments will be used: \n"
-			for elem in self._instrChoices: 
-				print "\t"+str(choiceAlphabet[int(elem)]) 
+			
+			if self._idUse: 
+				for elem in self._instrChoices: 
+					print "\t" + str(elem)
+			
+			elif self._midiUse:
+				for elem in self._instrChoices: 
+					print "\t"+str(choiceAlphabet[int(elem)]) 
 			print
 	
 		elif not self._instrChoice: 
