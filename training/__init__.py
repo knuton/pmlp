@@ -166,7 +166,7 @@ class Trainer:
 			chordNGram = ngram.ChordNGram(chordProg[i:i+n])
 			self._structure[partName].seenOnCondition(chordNGram.condition, chordNGram.sample)
 		
-		logger.status("Conditional frequency distribution for %s has %i conditions." % (partName, len(self._melody[partName])))
+		logger.status("Conditional frequency distribution for %s has %i conditions." % (partName, len(self._structure[partName])))
 	
 	def _loadFromCorpus(self, dataType):
 		return corpus.persistence.load(dataType, self._collectionName, self._corpusName)
