@@ -222,7 +222,7 @@ class SimpleChord:
 		>>> sce.getSerious().determineType()
 		'Minor Triad'
 		"""
-		startpos = self.__class__.scale.index(self._root)
+		startpos = self._pitchClass()
 		notenames = [self._root]
 		notenames.append(self._circularIndex(startpos + 7))
 		if self._major:
