@@ -92,14 +92,18 @@ class Generator:
 			else: 
 				partInstr.partName = str(partName)
 			
-		partInstr.partIdRandomize()
-		part.insert(0, partInstr)
+		# assign random id (produces errors and doesnt seem necessary)
+		#partInstr.partIdRandomize()
 		
+		# generate scoreInstrument information (seems necessary)
+		partInstr.instrumentId = partInstr.partId
+		partInstr.instrumentName = partInstr.partName
+		
+		part.insert(0, partInstr)
 		
 		
 		# Insert instrument specific generation procedures here
 		# using instrumentGroups might be helpful
-		
 		
 		
 		for note in score:

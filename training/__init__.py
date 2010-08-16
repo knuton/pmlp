@@ -164,8 +164,8 @@ class Trainer:
 		
 		print "\n You can choose between the following instruments: \n"
 		for elem in sorted(choiceProgs): 
-			#if int(elem) in range(1, len(choiceAlphabet)): 
-			print " " + str(int(elem)) + "\t" + str(choiceAlphabet[int(elem)]) 
+			if int(elem) in range(1, len(choiceAlphabet)): 
+				print " " + str(int(elem)) + "\t" + str(choiceAlphabet[int(elem)]) 
 		
 		print "\n Enter the corresponding number to choose an instrument you want to use \n"
 		print " Enter 'n' when you are finished choosing instruments. "
