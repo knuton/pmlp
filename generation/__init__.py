@@ -17,6 +17,32 @@ from common.exceptions import StateError
 from music import chordial
 from tools.mididicts import midiAlphabet, midiNameAlphabet, instrumentGroups
 
+# melodyinstruments contains all midiPrograms that usually generate melodies
+melodyinstruments = []
+for number in instrumentGroups["Piano"]: 
+	melodyinstruments.append(number)
+for number in instrumentGroups["Strings"]: 
+	melodyinstruments.append(number)
+#for number in instrumentGroups["Strings (continued)"]: 
+#	melodyinstruments.append(number)
+for number in instrumentGroups["Pipe"]: 
+	melodyinstruments.append(number)
+for number in instrumentGroups["Guitar"]: 
+	melodyinstruments.append(number)
+for number in instrumentGroups["Organ"]: 
+	melodyinstruments.append(number)		
+for number in instrumentGroups["Brass"]: 
+	melodyinstruments.append(number)
+
+druminstruments = []
+for number in instrumentGroups["Chromatic Percussion"]: 
+	druminstruments.append(number)
+for number in instrumentGroups["Percussive"]: 
+	druminstruments.append(number)
+# this actually belongs to the Bass category which isn't implemented yet
+for number in instrumentGroups["Bass"]: 
+	druminstruments.append(number)
+
 
 class Generator:
 	""" Generates a new song from conditional frequency distributions. """
@@ -58,19 +84,7 @@ class Generator:
 		history = random.choice(self._melody[partName].conditions)
 		logger.status("Starting from " + str(history))
 		
-		score = []
-		for note in history:
-			score.append(self._fixNote(note, currOffset))
-			currOffset += note.quarterLength
 		
-		while currOffset < measureNum * measureLen: 
-			nextNote = self._predictNote(history, partName)
-			
-			score.append(self._fixNote(nextNote, currOffset))
-			currOffset += nextNote.quarterLength
-			
-			history = history[1:] + (nextNote,)
-			logger.status("Current history is " + str(history))
 		
 		part = music21.stream.Part()
 		
@@ -105,9 +119,180 @@ class Generator:
 		# Insert instrument specific generation procedures here
 		# using instrumentGroups might be helpful
 		
+		#-----------------------------------------------------------------#
+		# Melody
 		
-		for note in score:
-			part.append(note)
+		if partInstr.midiProgram in melodyinstruments: 	
+			# create some music	
+			score = []
+			for note in history:
+				score.append(self._fixNote(note, currOffset))
+				currOffset += note.quarterLength
+		
+			# the limit is quite high to avoid index out of range errors below
+			while currOffset < measureNum * 3 * measureLen: 
+				nextNote = self._predictNote(history, partName)
+			
+				score.append(self._fixNote(nextNote, currOffset))
+				currOffset += nextNote.quarterLength
+			
+				history = history[1:] + (nextNote,)
+				logger.status("Current history is " + str(history))
+			
+			# create a part 
+			musicSamples = music21.stream.Part()
+			for note in score:
+				musicSamples.append(note)
+			
+			# extract measures
+			musicSamplesMeasures = musicSamples.makeMeasures()
+			
+			# create song components from measures
+			verse = []
+			verse.append(musicSamplesMeasures[1])
+			verse.append(musicSamplesMeasures[2])
+			verse.append(musicSamplesMeasures[3])
+			verse.append(musicSamplesMeasures[4])
+			
+			chorus = []
+			chorus.append(musicSamplesMeasures[5])
+			chorus.append(musicSamplesMeasures[6])
+			chorus.append(musicSamplesMeasures[7])
+			chorus.append(musicSamplesMeasures[8])
+		
+			bridge = []
+			bridge.append(musicSamplesMeasures[9])
+			bridge.append(musicSamplesMeasures[10])
+			bridge.append(musicSamplesMeasures[11])
+			bridge.append(musicSamplesMeasures[12])
+		
+			#delete offset information
+			for m in verse: 
+				m.offset = 0 
+				m.measureNumber = 0 	
+			for m in chorus: 
+				m.offset = 0
+				m.measureNumber = 0
+			for m in bridge: 
+				m.offset = 0
+				m.measureNumber = 0
+			
+			# fill the part
+			# using repeatAppend because that creates a copy of the measure which helps keeping the right order 
+			for m in verse: 
+				part.repeatAppend(m,1)
+			for m in verse: 
+				part.repeatAppend(m,1)
+			for m in chorus: 
+				part.repeatAppend(m,1)
+			for m in verse: 
+				part.repeatAppend(m,1)
+			for m in chorus: 
+				part.repeatAppend(m,1)
+			for m in bridge: 
+				part.repeatAppend(m,1)
+			for m in chorus: 
+				part.repeatAppend(m,1)
+							
+		#-----------------------------------------------------------------#
+		# Drums
+		
+		#elif partInstr.midiProgram in druminstruments: 	
+		else:
+			# create some music	
+			score = []
+			for note in history:
+				score.append(self._fixNote(note, currOffset))
+				currOffset += note.quarterLength
+		
+			# the limit is quite high to avoid index out of range errors below
+			while currOffset < measureNum * 2 * measureLen: 
+				nextNote = self._predictNote(history, partName)
+			
+				score.append(self._fixNote(nextNote, currOffset))
+				currOffset += nextNote.quarterLength
+			
+				history = history[1:] + (nextNote,)
+				logger.status("Current history is " + str(history))
+			
+			# create a part 
+			musicSamples = music21.stream.Part()
+			for note in score:
+				musicSamples.append(note)
+			
+			# extract measures
+			musicSamplesMeasures = musicSamples.makeMeasures()
+			
+			# create song components
+			verse = []
+			verse.append(musicSamplesMeasures[1])
+			verse.append(musicSamplesMeasures[1])
+			verse.append(musicSamplesMeasures[1])
+			verse.append(musicSamplesMeasures[2])
+			
+			chorus = []
+			chorus.append(musicSamplesMeasures[3])
+			chorus.append(musicSamplesMeasures[3])
+			chorus.append(musicSamplesMeasures[3])
+			chorus.append(musicSamplesMeasures[4])
+		
+			bridge = []
+			bridge.append(musicSamplesMeasures[5])
+			bridge.append(musicSamplesMeasures[5])
+			bridge.append(musicSamplesMeasures[5])
+			bridge.append(musicSamplesMeasures[5])
+		
+			#delete offset information
+			for m in verse: 
+				m.offset = 0 
+				m.measureNumber = 0 	
+			for m in chorus: 
+				m.offset = 0
+				m.measureNumber = 0
+			for m in bridge: 
+				m.offset = 0
+				m.measureNumber = 0
+			
+			# fill the part
+			for m in verse: 
+				part.repeatAppend(m,1)
+			for m in verse: 
+				part.repeatAppend(m,1)
+			for m in chorus: 
+				part.repeatAppend(m,1)
+			for m in verse: 
+				part.repeatAppend(m,1)
+			for m in chorus: 
+				part.repeatAppend(m,1)
+			for m in bridge: 
+				part.repeatAppend(m,1)
+			for m in chorus: 
+				part.repeatAppend(m,1)
+		
+		"""	
+		# old generation procedure
+		else: 	
+			# use old generation method 
+			score = []
+			for note in history:
+				score.append(self._fixNote(note, currOffset))
+				currOffset += note.quarterLength
+		
+			while currOffset < measureNum * measureLen: 
+				nextNote = self._predictNote(history, partName)
+			
+				score.append(self._fixNote(nextNote, currOffset))
+				currOffset += nextNote.quarterLength
+			
+				history = history[1:] + (nextNote,)
+				logger.status("Current history is " + str(history))
+		
+		
+			# put all the music into the part
+			for note in score:
+			#	print note.quarterLength
+				part.append(note)
+		"""
 		return part
 	
 	def _generateStructure(self, measureNum, measureLen):
@@ -144,7 +329,7 @@ class Generator:
 	
 	def generate(self):
 		""" Generate a whole new score. """
-		measureNum = 15
+		measureNum = 28
 		measureLen = 4
 		
 		s = music21.stream.Score()
@@ -157,7 +342,7 @@ class Generator:
 			# TODO determine measureNum and measureLen through analysis
 			s.insert(0, self._generatePart(instrument, measureNum, measureLen))
 		
-		self._smoothEnd(s)
+		#self._smoothEnd(s)
 
 		return s
 	
