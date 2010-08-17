@@ -17,7 +17,7 @@ from tools import logger, music42
 from common.exceptions import StateError
 from music import chordial
 
-from tools.mididicts import midiAlphabet
+from tools import mididicts
 
 class Trainer:
 	""" Oversees the training on a collection of MusicXML files. """
@@ -43,13 +43,10 @@ class Trainer:
 		
 		self._successful = False
 		
-		# midiUse and idUse determine how the trainer trains
+		# midiUse determines how the trainer trains
 		# (whether it uses midiPrograms or only part-ids for training)
 		self._midiUse = False
-		self._idUse = False
 		
-		# choosing the instruments yourself? 
-		self._instrChoice = False
 		# to be filled with instrument choices
 		self._instrChoices = []
 		
@@ -67,18 +64,7 @@ class Trainer:
 			
 			self._writeDumps()
 		
-		# if there is only one midiProgram used: use idUse 
-		if len(self._midiProgs.samples()) == 1:
-			self._midiUse = False
-			self._idUse = True
-		# if there are more ud midiUse 
-		elif len(self._midiProgs.samples()) > 1: 
-			self._midiUse = True
-			self._idUse = False
-		# if I made a programming-mistake use idUse
-		else: 
-			self._midiUse = False
-			self._idUse = True
+		self._setMidiUseFlag()
 		
 		# start instrumentChoice
 		self._instrumentChoice()
@@ -95,21 +81,9 @@ class Trainer:
 			logger.status("Analysing %s." % analysum)
 			getattr(self, '_%sAnalysis' % analysum)(inMemory)
 			
-			# check whether midiPrograms or ids should be used for training
 			if analysum == 'midiProgs':
-				# if there is only one midiProgram used: use idUse 
-				if len(self._midiProgs.samples()) == 1:
-					self._midiUse = False
-					self._idUse = True
-				# if there are more ud midiUse 
-				elif len(self._midiProgs.samples()) > 1: 
-					self._midiUse = True
-					self._idUse = False
-				# if I made a programming-mistake use idUse
-				else: 
-					self._midiUse = False
-					self._idUse = True
-			
+				self._setMidiUseFlag()
+	
 	def _hitDumps(self):
 		""" Try to get all analysums from dumps and cross them from the todo list if found. """
 		todo = copy.deepcopy(self._analysums)
@@ -140,73 +114,57 @@ class Trainer:
 		
 	def _instrumentChoice(self): 
 		""" Ask user which instruments he/she wants to have in the new song """
-		if self._idUse: 
+		availableInstruments = {}
+		
+		if self._midiUse:
+			for prog in self._midiProgs.samples():
+				if mididicts.isMidiProgram(prog):
+					if len(self._melody[prog]) > 0:
+						availableInstruments[int(prog)] = mididicts.midiAlphabet[int(prog)]
+		else:
 			partPrograms = self._instruments.samples()
-			partAlphabet = []
-			choiceProgs = []
 			i = 1
-			for id in partPrograms: 
-				if id != None: 
-					partAlphabet.append((i, str(id)))
-					choiceProgs.append(str(i))
+			for id in partPrograms:
+				if id:
+					availableInstruments[i] = str(id)
 					i = i + 1
-			choiceAlphabet = dict(partAlphabet)
-			print "choiceAlphabet"
-			print choiceAlphabet
-			
-		elif self._midiUse:
-			choiceAlphabet = midiAlphabet
-			choiceProgs = []
-			for elem in self._midiProgs.samples(): 
-				if int(elem): 
-					if len(self._melody[elem].conditions) > 0: 
-						choiceProgs.append(str(elem))		
+			print "availableInstruments"
+			print availableInstruments
 		
 		print "\n You can choose between the following instruments: \n"
-		for elem in sorted(choiceProgs): 
-			if int(elem) in range(1, len(choiceAlphabet)): 
-				print " " + str(int(elem)) + "\t" + str(choiceAlphabet[int(elem)]) 
+		for instrumentNum in sorted(availableInstruments): 
+			print " " + str(instrumentNum) + "\t" + str(availableInstruments[instrumentNum]) 
 		
 		print "\n Enter the corresponding number to choose an instrument you want to use \n"
 		print " Enter 'n' when you are finished choosing instruments. "
 		print " Enter 'x' if you do not want to make a choice. \n"
 		
-		iChoice = raw_input(" make your choice: ")
-		if iChoice == "x" or iChoice == "n": 
-			self._instrChoice = False
-		else: 
-			self._instrChoice = True
-		
-		if self._instrChoice:
-			while iChoice not in choiceProgs:
-				iChoice = raw_input(" Please make a valid choice: ")
-				
-		if self._instrChoice: 
-			while iChoice != "n": 
-				if self._idUse:
-					self._instrChoices.append(choiceAlphabet[int(iChoice)])
-				elif self._midiUse:
+		while True:
+			iChoice = raw_input(" make your choice: ")
+			
+			if (len(self._instrChoice) == 0 and iChoice == "x") or iChoice == "n":
+				break
+			
+			if iChoice not in choiceProgs:
+				print " Please make a valid choice."
+			else:
+				if self._midiUse:
 					self._instrChoices.append(iChoice)
-				iChoice = raw_input(" Anything else?: ")
-				if iChoice == "n":
-					break
-				while iChoice not in choiceProgs:
-					iChoice = raw_input(" Please make a valid choice: ")
-					if iChoice == "n": 
-						break
+				else:
+					self._instrChoices.append(availableInstruments[int(iChoice)])
 			
+			print "A number to choose another, 'n' to finish."
+		
+		if self._instrChoices:
 			print "\n The following instruments will be used: \n"
-			
-			if self._idUse: 
+				
+			if self._midiUse: 
 				for elem in self._instrChoices: 
-					print "\t" + str(elem)
-			
-			elif self._midiUse:
+					print "\t" + str(choiceAlphabet[int(elem)]) + "\n"
+			else:
 				for elem in self._instrChoices: 
-					print "\t"+str(choiceAlphabet[int(elem)]) 
-			print
-	
-		elif not self._instrChoice: 
+					print "\t" + str(elem) + "\n"
+		else: 
 			print " Ok then I will choose the instruments"
 		
 	def _bandSizeAnalysis(self, m21score):
@@ -214,12 +172,12 @@ class Trainer:
 		if len(self._instruments) == 0:
 			self._bandSize = 0
 		
-		# if idUse is used: calculate using instruments
-		if self._idUse: 
-			self._bandSize = len(self._instruments.getByPercentage(self._instruments.relativeFrequency(self._instruments.top)/2.0))
 		# if midiUse is used: calculate using midiProgs
 		if self._midiUse: 
-			self._bandsize = len(self._midiProgs.getByPercentage(self._instruments.relativeFrequency(self._instruments.top)/2.0))	
+			self._bandsize = len(self._midiProgs.getByPercentage(self._instruments.relativeFrequency(self._instruments.top)/2.0))
+		# if idUse is used: calculate using instruments
+		else: 
+			self._bandSize = len(self._instruments.getByPercentage(self._instruments.relativeFrequency(self._instruments.top)/2.0))
 		
 	def _instrumentsAnalysis(self, m21score):
 		""" Adds a scores instruments to the list of instruments. """
@@ -259,21 +217,17 @@ class Trainer:
 		""" Analyses one stream of notes. """
 		n = 5
 		
-		# What is this good for?
-		#if isinstance(m21part.id, int):
-		#	return
+		# What is this good for? Sometimes the id was an integer, then it is useless and will likely cause trouble.
+		# If this causes/caused trouble tell me (johannes).
+		if isinstance(m21part.id, int):
+			return
 		
-		# if useID train on ids
-		if self._idUse: 
-			partName = str(m21part.id)
-		
-		# else train on midiPrograms 
-		elif self._midiUse: 
+		# train on midiPrograms or partIDs
+		if self._midiUse: 
 			partInstr = m21part.getInstrument()
 			partName = str(partInstr.midiProgram)
-					
-		else: 
-			return
+		else:
+			partName = str(m21part.id)
 		
 		partNotes = m21part.flat.notes
 		
@@ -305,19 +259,14 @@ class Trainer:
 		""" Analyses the chord structure for one stream of notes. """
 		n = 3
 		
-		#if isinstance(m21part.id, int):
-		#	return
+		if isinstance(m21part.id, int):
+			return
 		
-		# if useID train on ids
-		if self._idUse: 
-			partName = str(m21part.id)
-		
-		elif self._midiUse: 
+		if self._midiUse: 
 			partInstr = m21part.getInstrument()
 			partName = str(partInstr.midiProgram)
-		
-		else: 
-			return
+		else:
+			partName = str(m21part.id)
 		
 		chordProg = chordial.fromNotes(m21part)
 		
@@ -326,6 +275,11 @@ class Trainer:
 			self._structure[partName].seenOnCondition(chordNGram.condition, chordNGram.sample)
 		
 		logger.status("Conditional frequency distribution for %s has %i conditions." % (partName, len(self._structure[partName])))
+	
+	def _setMidiUseFlag(self):
+		""" Look at existing data and set flag for use of partId or midi based instrumentation. """
+		# MIDI gets used if there is more than one MIDI program in the data
+		self._midiUse = len(self._midiProgs) > 1
 	
 	def _loadFromCorpus(self, dataType):
 		return corpus.persistence.load(dataType, self._collectionName, self._corpusName)
@@ -340,8 +294,6 @@ class Trainer:
 		
 		if self._midiUse: 
 			useWinner = "midiUse"
-		elif self._idUse: 
-			useWinner = "idUse"
 		else: 
 			useWinner = "idUse"
 		
