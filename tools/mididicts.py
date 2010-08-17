@@ -133,6 +133,12 @@ midiAlphabet = {
 # and the other way around
 midiNameAlphabet = dict((v,k) for k, v in midiAlphabet.iteritems())
 
+def isMidiProgram(number):
+	""" Returns a boolean value corresponding to the number being a valid midi program. """
+	try:
+		return int(number) in midiAlphabet
+	except:
+		return False
 
 # Instrument categories:
 # "{Category: [midiPrograms], ...}"
