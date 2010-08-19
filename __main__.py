@@ -110,11 +110,11 @@ def generate(collection, corpus, xmls):
 		song = generator.generate()
 		
 		# add more choices if you like ;)
-		addendum = ['2010','reloaded','interpretation','(unreleased)', 'ringtone']
+		addendum = ['2010','reloaded','interpretation','(unreleased)', 'ringtone', 'brand new!', 'Masterpiece', 'Magnum Opus', 'demo', 'hidden track', 'new album pre-release']
 		
 		# insert metadata: 
 		song.insert(music21.metadata.Metadata())
-		song.metadata.title = '%s %s %s' % (collection, corpus, str(random.choice(addendum)))
+		song.metadata.title = '%s %s %s' % (collection.upper(), corpus.capitalize(), str(random.choice(addendum)))
 		song.metadata.composer = 'Practical Music Listener Pleasing'
 		# copyright doesn't seem to work this way
 		#song.metadata.Copyright = "test"
