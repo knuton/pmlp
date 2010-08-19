@@ -15,42 +15,10 @@ from statistics import frequency
 from tools import logger, music42
 from common.exceptions import StateError
 from music import chordial
-from tools.mididicts import midiAlphabet, midiNameAlphabet, instrumentGroups
-
-
-
-# melodyinstruments contains all midiPrograms that usually generate melodies
-melodyinstruments = []
-for number in instrumentGroups["Piano"]: 
-	melodyinstruments.append(number)
-for number in instrumentGroups["Strings"]: 
-	melodyinstruments.append(number)
-#for number in instrumentGroups["Strings (continued)"]: 
-#	melodyinstruments.append(number)
-for number in instrumentGroups["Pipe"]: 
-	melodyinstruments.append(number)
-for number in instrumentGroups["Guitar"]: 
-	melodyinstruments.append(number)
-for number in instrumentGroups["Organ"]: 
-	melodyinstruments.append(number)		
-for number in instrumentGroups["Brass"]: 
-	melodyinstruments.append(number)
-
-druminstruments = []
-for number in instrumentGroups["Chromatic Percussion"]: 
-	druminstruments.append(number)
-for number in instrumentGroups["Percussive"]: 
-	druminstruments.append(number)
-# this actually belongs to the Bass category which isn't implemented yet
-for number in instrumentGroups["Bass"]: 
-	druminstruments.append(number)
-
-
+from tools import mididicts
 
 class Generator:
 	""" Generates a new song from conditional frequency distributions. """
-	
-	
 	
 	def __init__(self, resultSet):
 		""" Fills the generator with the available data. """
@@ -80,7 +48,6 @@ class Generator:
 		self._alphabets = {}
 		for instrument in self._activeInstruments:
 			self._alphabets[instrument] = self._melody[instrument].sampleSpace
-	
 		
 		self._melodyFree = True
 	
@@ -101,17 +68,17 @@ class Generator:
 		partInstr = part.getInstrument()
 		if self._useWinner == "midiUse": 
 			partInstr.midiProgram = int(partName) # This makes the parts sound different!
-			partInstr.partName = str(midiAlphabet[partInstr.midiProgram])
+			partInstr.partName = str(mididicts.midiAlphabet[partInstr.midiProgram])
 		elif self._useWinner == "idUse":	
 			# try to find a suitable midiProgram by comparing the name of the part with 128 different instrument names
 			compare = " " + str(partName) + " "
-			simInstruments = difflib.get_close_matches(compare, midiNameAlphabet.keys())
+			simInstruments = difflib.get_close_matches(compare, mididicts.midiNameAlphabet.keys())
 			
 			# if successful: use the corresponding midiProgram
 			if len(simInstruments) > 0: 
 				simInstrument = simInstruments[0]
-				partInstr.midiProgram = int(midiNameAlphabet[simInstrument])
-				partInstr.partName = str(midiAlphabet[partInstr.midiProgram])		
+				partInstr.midiProgram = int(mididicts.midiNameAlphabet[simInstrument])
+				partInstr.partName = str(mididicts.midiAlphabet[partInstr.midiProgram])		
 			else: 
 				partInstr.partName = str(partName)
 			
@@ -138,7 +105,7 @@ class Generator:
 		#-----------------------------------------------------------------#
 		# Melody
 		
-		if partInstr.midiProgram in melodyinstruments and self._melodyFree: 	
+		if partInstr.midiProgram in mididicts.instrumentGroups["melody"] and self._melodyFree: 	
 		
 			musicSamplesMeasures = [1,2]
 			
@@ -241,7 +208,7 @@ class Generator:
 		#-----------------------------------------------------------------#
 		# Drums
 		
-		elif partInstr.midiProgram in druminstruments or not self._melodyFree: 	
+		elif partInstr.midiProgram in mididicts.instrumentGroups["rhythm"] or not self._melodyFree: 	
 		#else:
 			musicSamplesMeasures = [1,2]
 			# loop to avoid index errors when generating verse and so on
@@ -330,7 +297,6 @@ class Generator:
 		#-----------------------------------------------------------------#
 		# all the rest
 		
-		#elif partInstr.midiProgram in druminstruments: 	
 		else:
 			musicSamplesMeasures = [1,2]
 			# loop to avoid index errors when generating verse and so on
