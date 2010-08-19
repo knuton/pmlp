@@ -118,15 +118,13 @@ class Trainer:
 		
 		if self._midiUse:
 			for prog in self._midiProgs.samples():
-				if mididicts.isMidiProgram(prog):
-					if len(self._melody[prog]) > 0:
-						availableInstruments[int(prog)] = mididicts.midiAlphabet[int(prog)]
+				if mididicts.isMidiProgram(prog) and len(self._melody[prog]) > 0:
+					availableInstruments[prog] = mididicts.midiAlphabet[int(prog)]
 		else:
-			partPrograms = self._instruments.samples()
 			i = 1
-			for id in partPrograms:
+			for id in self._instruments.samples():
 				if id:
-					availableInstruments[i] = str(id)
+					availableInstruments[int(i)] = str(id)
 					i = i + 1
 			print "availableInstruments"
 			print availableInstruments
@@ -140,27 +138,28 @@ class Trainer:
 		print " Enter 'x' if you do not want to make a choice. \n"
 		
 		while True:
-			iChoice = raw_input(" make your choice: ")
+			iChoice = raw_input(" Make your choice: ")
 			
-			if (len(self._instrChoice) == 0 and iChoice == "x") or iChoice == "n":
+			if (len(self._instrChoices) == 0 and iChoice == "x") or iChoice == "n":
 				break
 			
-			if iChoice not in choiceProgs:
-				print " Please make a valid choice."
-			else:
+			if iChoice in availableInstruments:
 				if self._midiUse:
 					self._instrChoices.append(iChoice)
 				else:
 					self._instrChoices.append(availableInstruments[int(iChoice)])
+			else:
+				print " Please make a valid choice."
+				continue
 			
-			print "A number to choose another, 'n' to finish."
+			print " A number to choose another, 'n' to finish."
 		
 		if self._instrChoices:
 			print "\n The following instruments will be used: \n"
 				
 			if self._midiUse: 
 				for elem in self._instrChoices: 
-					print "\t" + str(choiceAlphabet[int(elem)]) + "\n"
+					print "\t" + str(mididicts.midiAlphabet[int(elem)]) + "\n"
 			else:
 				for elem in self._instrChoices: 
 					print "\t" + str(elem) + "\n"
