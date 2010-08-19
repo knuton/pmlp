@@ -167,3 +167,9 @@ instrumentGroups = {
 	"Percussive":[113,114,115,116,117,118,119],
 	"Sound effects":[120,121,122,123,124,125,126,127,128]
 }
+
+for group, members in (("melody", ["Piano", "Strings", "Pipe", "Guitar", "Organ", "Brass"]), ("rhythm", ["Chromatic Percussion", "Percussive", "Bass"])):
+	instrumentGroups[group] = reduce(
+		lambda x,y: x+y,
+		map(lambda x: instrumentGroups[x], members)
+	)
