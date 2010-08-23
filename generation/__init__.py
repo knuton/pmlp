@@ -4,8 +4,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # --- End of parent loading
 
-import music21.stream
-import music21.note
+import music21
 
 import random
 import difflib
@@ -167,21 +166,8 @@ class Generator:
 			bridge.append(musicSamplesMeasures[12])
 			bridge.append(musicSamplesMeasures[13])
 		
-			#delete offset information
-			for m in intrOutro:
-				m.offset = 0
-				m.measureNumber = 0
-			for m in verse:
-				m.offset = 0
-				m.measureNumber = 0 	
-			for m in chorus:
-				m.offset = 0
-				m.measureNumber = 0
-			for m in bridge:
-				m.offset = 0
-				m.measureNumber = 0
+			helper.resetContexts([intrOutro, verse, chorus, bridge])
 			
-			# fill the part
 			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], intrOutro)
 				
 			self._melodyFree = False
@@ -244,18 +230,8 @@ class Generator:
 			bridge.append(musicSamplesMeasures[5])
 			bridge.append(musicSamplesMeasures[5])
 			
-			#delete offset information
-			for m in verse:
-				m.offset = 0
-				m.measureNumber = 0
-			for m in chorus:
-				m.offset = 0
-				m.measureNumber = 0
-			for m in bridge:
-				m.offset = 0
-				m.measureNumber = 0
+			helper.resetContexts([verse, chorus, bridge])
 			
-			# fill the part
 			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], restMeasure, numOfRepeats = 2)
 		
 		#-----------------------------------------------------------------#
@@ -315,18 +291,7 @@ class Generator:
 			bridge.append(musicSamplesMeasures[6])
 			bridge.append(musicSamplesMeasures[5])
 		
-			#delete offset information
-			for m in verse:
-				m.offset = 0
-				m.measureNumber = 0
-			for m in chorus:
-				m.offset = 0
-				m.measureNumber = 0
-			for m in bridge:
-				m.offset = 0
-				m.measureNumber = 0
-			
-			# fill the part
+			helper.resetContexts([verse, chorus, bridge])
 			
 			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], restMeasure, numOfRepeats = 2)
 		
@@ -413,30 +378,37 @@ class Generator:
 					continue
 				newM = newPart[e]
 				for oldPart in s:
+					if not e < len(oldPart):
+						continue
 					oldM = oldPart[e]
-					for elem in newM:
-						sameOffset = []
-						# dont use .isNote (isinstance produces less errors because only few objects have an isNote function)
-						if isinstance(elem, music21.note.Note): 
-							for oelem in oldM: 
-								if isinstance(oelem, music21.note.Note):
-									# all notes that overlap with the current note are stored in sameOffset
-									if elem.offset in range(oelem.offset, (oelem.offset + oelem.quarterLength)) or oelem.offset in range(elem.offset, (elem.offset + elem.quarterLength)):
-										sameOffset.append(oelem)
-						# if overlapping notes were found:
-						if sameOffset:
-							for i in range(len(sameOffset)):
-								for j in range(len(sameOffset)):
-									k = 0
-									while self._areConflicting(sameOffset[i], elem) or self._areConflicting(sameOffset[j], elem): 
-										logger.status("transposing: %s" % str(elem))
-										elem = elem.transpose(-1)
-										logger.status("transposed: %s" % str(elem))
-										# k prevents infinite loops
-										k = k + 1
-										if k == 40:
-											logger.status("%s is not harmonizable" % str(elem))
-											break
+					if isinstance(oldM, music21.ElementWrapper) and isinstance(oldM.obj, list):
+						oldMList = oldM.obj
+					else:
+						oldMList = [oldM]
+					for oldM in oldMList:
+						for elem in newM:
+							sameOffset = []
+							# dont use .isNote (isinstance produces less errors because only few objects have an isNote function)
+							if isinstance(elem, music21.note.Note): 
+								for oelem in oldM: 
+									if isinstance(oelem, music21.note.Note):
+										# all notes that overlap with the current note are stored in sameOffset
+										if elem.offset in range(oelem.offset, (oelem.offset + oelem.quarterLength)) or oelem.offset in range(elem.offset, (elem.offset + elem.quarterLength)):
+											sameOffset.append(oelem)
+							# if overlapping notes were found:
+							if sameOffset:
+								for i in range(len(sameOffset)):
+									for j in range(len(sameOffset)):
+										k = 0
+										while self._areConflicting(sameOffset[i], elem) or self._areConflicting(sameOffset[j], elem): 
+											logger.status("transposing: %s" % str(elem))
+											elem = elem.transpose(-1)
+											logger.status("transposed: %s" % str(elem))
+											# k prevents infinite loops
+											k = k + 1
+											if k == 40:
+												logger.status("%s is not harmonizable" % str(elem))
+												break
 				e = e + 1
 			
 			s.insert(0, newPart)
