@@ -407,10 +407,10 @@ class Generator:
 			
 			# check and change conflicting notes
 			e = 0
-			while e < len(newPart) - 1:
-			#for elem in range(len(newPart)):
-				while not isinstance(newPart[e], music21.stream.Measure):
+			while e < len(newPart):
+				if not isinstance(newPart[e], music21.stream.Measure):
 					e = e + 1
+					continue
 				newM = newPart[e]
 				for oldPart in s:
 					oldM = oldPart[e]
