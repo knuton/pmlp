@@ -16,6 +16,7 @@ from tools import logger, music42
 from common.exceptions import StateError
 from music import chordial
 from tools import mididicts
+import helper
 
 class Generator:
 	""" Generates a new song from conditional frequency distributions. """
@@ -51,20 +52,8 @@ class Generator:
 		
 		self._melodyFree = True
 	
-	
-	def _generatePart(self, partName, measureNum, measureLen):
-		""" Generates a part from its available data on call. """
-		currOffset = 0.0
-
-		# random starting point
-		history = random.choice(self._melody[partName].conditions)
-		logger.status("Starting from " + str(history))
-		
-		
-		
-		part = music21.stream.Part()
-		
-		# insert instrument information:
+	def _insertInstrument(self, part, partName):
+		""" Generates an instrument for a Part object fitting the provided partName. """
 		partInstr = part.getInstrument()
 		if self._useWinner == "midiUse": 
 			partInstr.midiProgram = int(partName) # This makes the parts sound different!
@@ -81,15 +70,27 @@ class Generator:
 				partInstr.partName = str(mididicts.midiAlphabet[partInstr.midiProgram])
 			else:
 				partInstr.partName = str(partName)
-			
-		# assign random id (produces errors and doesnt seem necessary)
-		#partInstr.partIdRandomize()
 		
-		# generate scoreInstrument information (seems necessary)
+		# generate scoreInstrument information
 		partInstr.instrumentId = partInstr.partId
 		partInstr.instrumentName = partInstr.partName
 		
 		part.insert(0, partInstr)
+		
+		return partInstr
+	
+	def _generatePart(self, partName, measureNum, measureLen):
+		""" Generates a part from its available data on call. """
+		currOffset = 0.0
+
+		# random starting point
+		history = random.choice(self._melody[partName].conditions)
+		logger.status("Starting from " + str(history))
+		
+		
+		part = music21.stream.Part()
+		
+		partInstr = self._insertInstrument(part, partName)
 		
 		
 		# Insert instrument specific generation procedures here
@@ -116,25 +117,25 @@ class Generator:
 				for note in history:
 					score.append(self._fixNote(note, currOffset))
 					currOffset += note.quarterLength
-		
+			
 				# the limit is quite high to avoid index out of range errors below
 				while currOffset < measureNum * 3 * measureLen:
 					nextNote = self._predictNote(history, partName)
-			
+				
 					score.append(self._fixNote(nextNote, currOffset))
 					currOffset += nextNote.quarterLength
-			
+				
 					history = history[1:] + (nextNote,)
 					logger.status("Current history is " + str(history))
-			
+				
 				# create a part
 				musicSamples = music21.stream.Part()
 				for note in score:
 					musicSamples.append(note)
-			
+				
 				# reset the values
 				currOffset = 0.0
-
+				
 				# random starting point
 				history = random.choice(self._melody[partName].conditions)
 				logger.status("Starting from " + str(history))
@@ -181,27 +182,7 @@ class Generator:
 				m.measureNumber = 0
 			
 			# fill the part
-			# using repeatAppend because that creates a copy of the measure which helps keeping the right order 
-			for m in intrOutro:
-				part.repeatAppend(m,1)
-			
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-			for m in bridge:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-				
-			for m in intrOutro:
-				part.repeatAppend(m,1)
+			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], intrOutro)
 				
 			self._melodyFree = False
 		
@@ -275,24 +256,7 @@ class Generator:
 				m.measureNumber = 0
 			
 			# fill the part
-			part.repeatAppend(restMeasure,2)
-			
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-			for m in bridge:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-				
-			part.repeatAppend(restMeasure,2)
+			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], restMeasure, numOfRepeats = 2)
 		
 		#-----------------------------------------------------------------#
 		# all the rest
@@ -364,24 +328,7 @@ class Generator:
 			
 			# fill the part
 			
-			part.repeatAppend(restMeasure,2)
-			
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-			for m in verse:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-			for m in bridge:
-				part.repeatAppend(m,1)
-			for m in chorus:
-				part.repeatAppend(m,1)
-			
-			part.repeatAppend(restMeasure,2)
+			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], restMeasure, numOfRepeats = 2)
 		
 		"""	
 		# old generation procedure
