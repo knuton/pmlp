@@ -81,11 +81,9 @@ class Generator:
 	def _generatePart(self, partName, measureNum, measureLen):
 		""" Generates a part from its available data on call. """
 		currOffset = 0.0
-
 		# random starting point
 		history = random.choice(self._melody[partName].conditions)
 		logger.status("Starting from " + str(history))
-		
 		
 		part = music21.stream.Part()
 		
@@ -101,49 +99,54 @@ class Generator:
 		rest.quarterLength = 4
 		restMeasure.append(rest)
 		
+		#-----------------------------------------------------------------#
+		# Define inner functions for reuse, but which need access to local variables.
+		
+		def _createMeasuresWithLength(length, musicSamplesMeasures = [1,2]):
+			localHistory = history
+			localCurrOffset = currOffset
+			# loop to avoid index errors when generating verse and so on
+			while len(musicSamplesMeasures) < length:
+				# create some music
+				score = []
+				for note in localHistory:
+					score.append(self._fixNote(note, localCurrOffset))
+					localCurrOffset += note.quarterLength
+				
+				# the limit is quite high to avoid index out of range errors below
+				while localCurrOffset < measureNum * 3 * measureLen:
+					nextNote = self._predictNote(localHistory, partName)
+					
+					score.append(self._fixNote(nextNote, localCurrOffset))
+					localCurrOffset += nextNote.quarterLength
+					
+					localHistory = localHistory[1:] + (nextNote,)
+					logger.status("Current history is " + str(localHistory))
+
+				# create a part
+				musicSamples = music21.stream.Part()
+				for note in score:
+					musicSamples.append(note)
+
+				# reset the values
+				localCurrOffset = 0.0
+
+				# new random starting point
+				localHistory = random.choice(self._melody[partName].conditions)
+
+				# extract measures
+				musicSamplesMeasures = musicSamples.makeMeasures()
+
+			return musicSamplesMeasures
 		
 		#-----------------------------------------------------------------#
 		# Melody
 		
 		if partInstr.midiProgram in mididicts.instrumentGroups["melody"] and self._melodyFree:
 		
-			musicSamplesMeasures = [1,2]
+			musicSamplesMeasures = _createMeasuresWithLength(14)
 			
-			# loop to avoid index errors when generating verse and so on
-			while len(musicSamplesMeasures) < 14:
-				# create some music
-				score = []
-				for note in history:
-					score.append(self._fixNote(note, currOffset))
-					currOffset += note.quarterLength
-			
-				# the limit is quite high to avoid index out of range errors below
-				while currOffset < measureNum * 3 * measureLen:
-					nextNote = self._predictNote(history, partName)
-				
-					score.append(self._fixNote(nextNote, currOffset))
-					currOffset += nextNote.quarterLength
-				
-					history = history[1:] + (nextNote,)
-					logger.status("Current history is " + str(history))
-				
-				# create a part
-				musicSamples = music21.stream.Part()
-				for note in score:
-					musicSamples.append(note)
-				
-				# reset the values
-				currOffset = 0.0
-				
-				# random starting point
-				history = random.choice(self._melody[partName].conditions)
-				logger.status("Starting from " + str(history))
-			
-				# extract measures
-				musicSamplesMeasures = musicSamples.makeMeasures()
-								
 			# create song components from measures
-			
 			intrOutro = []
 			intrOutro.append(musicSamplesMeasures[0])
 			intrOutro.append(musicSamplesMeasures[1])
@@ -176,40 +179,7 @@ class Generator:
 		# Drums
 		
 		elif partInstr.midiProgram in mididicts.instrumentGroups["rhythm"] or not self._melodyFree:
-		#else:
-			musicSamplesMeasures = [1,2]
-			# loop to avoid index errors when generating verse and so on
-			while len(musicSamplesMeasures) < 6:
-				# create some music
-				score = []
-				for note in history:
-					score.append(self._fixNote(note, currOffset))
-					currOffset += note.quarterLength
-		
-				# the limit is quite high to avoid index out of range errors below
-				while currOffset < measureNum * 3 * measureLen:
-					nextNote = self._predictNote(history, partName)
-			
-					score.append(self._fixNote(nextNote, currOffset))
-					currOffset += nextNote.quarterLength
-			
-					history = history[1:] + (nextNote,)
-					logger.status("Current history is " + str(history))
-			
-				# create a part
-				musicSamples = music21.stream.Part()
-				for note in score:
-					musicSamples.append(note)
-				
-				# reset the values
-				currOffset = 0.0
-
-				# random starting point
-				history = random.choice(self._melody[partName].conditions)
-				logger.status("Starting from " + str(history))
-				
-				# extract measures
-				musicSamplesMeasures = musicSamples.makeMeasures()
+			musicSamplesMeasures = _createMeasuresWithLength(6)
 			
 			# create song components
 			verse = []
@@ -238,39 +208,7 @@ class Generator:
 		# all the rest
 		
 		else:
-			musicSamplesMeasures = [1,2]
-			# loop to avoid index errors when generating verse and so on
-			while len(musicSamplesMeasures) < 6:
-				# create some music
-				score = []
-				for note in history:
-					score.append(self._fixNote(note, currOffset))
-					currOffset += note.quarterLength
-		
-				# the limit is quite high to avoid index out of range errors below
-				while currOffset < measureNum * 3 * measureLen:
-					nextNote = self._predictNote(history, partName)
-			
-					score.append(self._fixNote(nextNote, currOffset))
-					currOffset += nextNote.quarterLength
-			
-					history = history[1:] + (nextNote,)
-					logger.status("Current history is " + str(history))
-			
-				# create a part 
-				musicSamples = music21.stream.Part()
-				for note in score:
-					musicSamples.append(note)
-				
-				# reset the values
-				currOffset = 0.0
-
-				# random starting point
-				history = random.choice(self._melody[partName].conditions)
-				logger.status("Starting from " + str(history))
-				
-				# extract measures
-				musicSamplesMeasures = musicSamples.makeMeasures()
+			musicSamplesMeasures = _createMeasuresWithLength(6)
 			
 			# create song components
 			verse = []
@@ -295,31 +233,6 @@ class Generator:
 			
 			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], restMeasure, numOfRepeats = 2)
 		
-		"""	
-		# old generation procedure
-		else: 	
-			# use old generation method 
-			score = []
-			for note in history:
-				score.append(self._fixNote(note, currOffset))
-				currOffset += note.quarterLength
-		
-			while currOffset < measureNum * measureLen: 
-				nextNote = self._predictNote(history, partName)
-			
-				score.append(self._fixNote(nextNote, currOffset))
-				currOffset += nextNote.quarterLength
-			
-				history = history[1:] + (nextNote,)
-				logger.status("Current history is " + str(history))
-		
-		
-			# put all the music into the part
-			for note in score:
-			#	print note.quarterLength
-				part.append(note)
-		"""
-	
 		return part
 	
 	def _generateStructure(self, measureNum, measureLen):
