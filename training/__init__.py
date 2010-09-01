@@ -124,7 +124,7 @@ class Trainer:
 			i = 1
 			for id in self._instruments.samples():
 				if id:
-					availableInstruments[int(i)] = str(id)
+					availableInstruments[str(i)] = str(id)
 					i = i + 1
 			print "availableInstruments"
 			print availableInstruments
@@ -136,7 +136,8 @@ class Trainer:
 		print "\n Enter the corresponding number to choose an instrument you want to use \n"
 		print " Enter 'n' when you are finished choosing instruments. "
 		print " Enter 'x' if you do not want to make a choice. \n"
-		
+		#import pdb 
+		#pdb.set_trace()
 		while True:
 			iChoice = raw_input(" Make your choice: ")
 			
@@ -147,7 +148,7 @@ class Trainer:
 				if self._midiUse:
 					self._instrChoices.append(iChoice)
 				else:
-					self._instrChoices.append(availableInstruments[int(iChoice)])
+					self._instrChoices.append(availableInstruments[iChoice])
 			else:
 				print " Please make a valid choice."
 				continue

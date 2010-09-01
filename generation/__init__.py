@@ -151,11 +151,12 @@ class Generator:
 			intrOutro.append(musicSamplesMeasures[0])
 			intrOutro.append(musicSamplesMeasures[1])
 			
+			
 			verse = []
-			verse.append(musicSamplesMeasures[2])
-			verse.append(musicSamplesMeasures[3])
-			verse.append(musicSamplesMeasures[4])
-			verse.append(musicSamplesMeasures[5])
+			verse2.append(musicSamplesMeasures[2])
+			verse2.append(musicSamplesMeasures[3])
+			verse2.append(musicSamplesMeasures[4])
+			verse2.append(musicSamplesMeasures[5])
 			
 			chorus = []
 			chorus.append(musicSamplesMeasures[6])
@@ -167,7 +168,7 @@ class Generator:
 			bridge.append(musicSamplesMeasures[10])
 			bridge.append(musicSamplesMeasures[11])
 			bridge.append(musicSamplesMeasures[12])
-			bridge.append(musicSamplesMeasures[13])
+			bridge.append(musicSamplesMeasures[5])
 		
 			helper.resetContexts([intrOutro, verse, chorus, bridge])
 			
@@ -198,7 +199,7 @@ class Generator:
 			bridge.append(musicSamplesMeasures[5])
 			bridge.append(musicSamplesMeasures[5])
 			bridge.append(musicSamplesMeasures[5])
-			bridge.append(musicSamplesMeasures[5])
+			bridge.append(musicSamplesMeasures[2])
 			
 			helper.resetContexts([verse, chorus, bridge])
 			
@@ -227,7 +228,7 @@ class Generator:
 			bridge.append(musicSamplesMeasures[5])
 			bridge.append(musicSamplesMeasures[6])
 			bridge.append(musicSamplesMeasures[6])
-			bridge.append(musicSamplesMeasures[5])
+			bridge.append(musicSamplesMeasures[2])
 		
 			helper.resetContexts([verse, chorus, bridge])
 			
@@ -379,10 +380,13 @@ class Generator:
 		# conflictlist contains intervals that would produce a conflict
 	
 		# every note which is 1/2 step above or below produces conflict
-		conflictlist = [1,11,13,23,25,35,37,47,49,59,61,71,73,83,85,95,97]
+		# conflictlist = [1,11,13,23,25,35,37,47,49,59,61,71,73,83,85,95,97]
 		
 		# helmholzlist follows another theory. 
-		#conflictlist = [1,2,10,11,13,14,22,23,25,26,34,35,37,38,46,47,49,50,58,59,61,62,70,71]
+		# conflictlist = [1,2,10,11,13,14,22,23,25,26,34,35,37,38,46,47,49,50,58,59,61,62,70,71]
+
+		# 16th century standard  
+		conflictlist = [1,2,5,6,10,11,13,14,17,18,22,23,25,26,29,30,34,35,37,38,41,42,46,47,49,50,53,54,58,59,61,62,65,66,70,71]
 
 		if Note1.isNote and Note2.isNote:
 			intval = music21.interval.notesToChromatic(Note1,Note2)
