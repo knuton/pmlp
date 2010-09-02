@@ -114,7 +114,7 @@ class Generator:
 					localCurrOffset += note.quarterLength
 				
 				# the limit is quite high to avoid index out of range errors below
-				while localCurrOffset < measureNum * 3 * measureLen:
+				while localCurrOffset < measureNum * 4 * measureLen:
 					nextNote = self._predictNote(localHistory, partName)
 					
 					score.append(self._fixNote(nextNote, localCurrOffset))
@@ -151,28 +151,92 @@ class Generator:
 			intrOutro.append(musicSamplesMeasures[0])
 			intrOutro.append(musicSamplesMeasures[1])
 			
+			freemel = True
 			
-			verse = []
-			verse2.append(musicSamplesMeasures[2])
-			verse2.append(musicSamplesMeasures[3])
-			verse2.append(musicSamplesMeasures[4])
-			verse2.append(musicSamplesMeasures[5])
+			melchoice = 0
+			print "\nDo you want to create a free or a very structured melody?"
+			while True: 
+				melchoice = raw_input("enter 'f' for a free or 's' for a structured melody: ")
+				if melchoice == "f": 
+					break
+				elif melchoice == "s": 
+					break
+				
+			if str(melchoice) == "f": 
+				freemel = True
+			else: 
+				freemel = False
 			
-			chorus = []
-			chorus.append(musicSamplesMeasures[6])
-			chorus.append(musicSamplesMeasures[7])
-			chorus.append(musicSamplesMeasures[8])
-			chorus.append(musicSamplesMeasures[9])
+			
+			# create a free melody
+			
+			if freemel: 
+			
+				mel = []
+				mel.append(musicSamplesMeasures[2])
+				mel.append(musicSamplesMeasures[3])
+				mel.append(musicSamplesMeasures[4])
+				mel.append(musicSamplesMeasures[5])
+			
+				mel.append(musicSamplesMeasures[6])
+				mel.append(musicSamplesMeasures[7])
+				mel.append(musicSamplesMeasures[8])
+				mel.append(musicSamplesMeasures[9])
+
+				mel.append(musicSamplesMeasures[10])
+				mel.append(musicSamplesMeasures[11])
+				mel.append(musicSamplesMeasures[12])
+				mel.append(musicSamplesMeasures[13])
+			
+				mel.append(musicSamplesMeasures[14])
+				mel.append(musicSamplesMeasures[15])
+				mel.append(musicSamplesMeasures[16])
+				mel.append(musicSamplesMeasures[17])
+			
+				mel.append(musicSamplesMeasures[18])
+				mel.append(musicSamplesMeasures[19])
+				mel.append(musicSamplesMeasures[20])
+				mel.append(musicSamplesMeasures[21])
+			
+				mel.append(musicSamplesMeasures[2])
+				mel.append(musicSamplesMeasures[3])
+				mel.append(musicSamplesMeasures[4])
+				mel.append(musicSamplesMeasures[5])
+			
+				mel.append(musicSamplesMeasures[6])
+				mel.append(musicSamplesMeasures[7])
+				mel.append(musicSamplesMeasures[8])
+				mel.append(musicSamplesMeasures[9])
+			
+				helper.resetContexts([intrOutro, mel])
+			
+				helper.combineSubparts(part, [mel], intrOutro)
+			
+			if not freemel: 
+				
+				verse = []
+				verse.append(musicSamplesMeasures[2])
+				verse.append(musicSamplesMeasures[3])
+				verse.append(musicSamplesMeasures[4])
+				verse.append(musicSamplesMeasures[5])
+			
+				chorus = []
+				chorus.append(musicSamplesMeasures[6])
+				chorus.append(musicSamplesMeasures[7])
+				chorus.append(musicSamplesMeasures[8])
+				chorus.append(musicSamplesMeasures[9])
 		
-			bridge = []
-			bridge.append(musicSamplesMeasures[10])
-			bridge.append(musicSamplesMeasures[11])
-			bridge.append(musicSamplesMeasures[12])
-			bridge.append(musicSamplesMeasures[5])
+				bridge = []
+				bridge.append(musicSamplesMeasures[10])
+				bridge.append(musicSamplesMeasures[11])
+				bridge.append(musicSamplesMeasures[12])
+				bridge.append(musicSamplesMeasures[5])
 		
-			helper.resetContexts([intrOutro, verse, chorus, bridge])
+				helper.resetContexts([intrOutro, verse, chorus, bridge])
 			
-			helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], intrOutro)
+				helper.combineSubparts(part, [verse, verse, chorus, verse, chorus, bridge, chorus], intrOutro)
+			
+				
 				
 			self._melodyFree = False
 		
@@ -278,6 +342,8 @@ class Generator:
 		logger.status("Generating structure for score.")
 		self._generateStructure(measureNum, measureLen)
 		
+		self._melodyFree = True
+
 		
 		for instrument in self._activeInstruments:
 			logger.status("Generating part for %s." % instrument)
@@ -383,7 +449,7 @@ class Generator:
 		# conflictlist = [1,11,13,23,25,35,37,47,49,59,61,71,73,83,85,95,97]
 		
 		# helmholzlist follows another theory. 
-		# conflictlist = [1,2,10,11,13,14,22,23,25,26,34,35,37,38,46,47,49,50,58,59,61,62,70,71]
+		#conflictlist = [1,2,10,11,13,14,22,23,25,26,34,35,37,38,46,47,49,50,58,59,61,62,70,71]
 
 		# 16th century standard  
 		conflictlist = [1,2,5,6,10,11,13,14,17,18,22,23,25,26,29,30,34,35,37,38,41,42,46,47,49,50,53,54,58,59,61,62,65,66,70,71]
