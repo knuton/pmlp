@@ -174,7 +174,7 @@ class Trainer:
 		
 		# if midiUse is used: calculate using midiProgs
 		if self._midiUse: 
-			self._bandSize = len(self._midiProgs.getByPercentage(self._instruments.relativeFrequency(self._instruments.top)/2.0))
+			self._bandSize = len(self._midiProgs.getByPercentage(self._midiProgs.relativeFrequency(self._midiProgs.top)/2.0))
 		# if idUse is used: calculate using instruments
 		else: 
 			self._bandSize = len(self._instruments.getByPercentage(self._instruments.relativeFrequency(self._instruments.top)/2.0))
